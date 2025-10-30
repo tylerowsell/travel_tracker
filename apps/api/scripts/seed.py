@@ -1,7 +1,11 @@
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from datetime import date, datetime, timedelta
 from sqlalchemy.orm import Session
-from ..database import SessionLocal, Base, engine
-from ..models import Trip, Participant, Expense, ExpenseSplit, ItineraryItem
+from database import SessionLocal, Base, engine
+from models import Trip, Participant, Expense, ExpenseSplit, ItineraryItem
 
 def run():
     Base.metadata.create_all(bind=engine)
