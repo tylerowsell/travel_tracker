@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Enum, Text, Numeric, UniqueConstraint, Boolean
 from sqlalchemy.orm import relationship
-from .database import Base
+from database import Base
 import enum
 
 class ItineraryType(str, enum.Enum):

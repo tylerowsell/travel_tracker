@@ -1,8 +1,8 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .database import Base, engine
-from .routers import trips, participants, itinerary, expenses, balances, exchange
+from database import Base, engine
+from routers import trips, participants, itinerary, expenses, balances, exchange
 
 ENV = os.environ.get("ENV", "local")
 CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")]

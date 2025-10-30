@@ -3,8 +3,8 @@ from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 import httpx
-from ..database import get_db
-from .. import models
+from database import get_db
+import models
 
 router = APIRouter(prefix="/fx", tags=["fx"])
 

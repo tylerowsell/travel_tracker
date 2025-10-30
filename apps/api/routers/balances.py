@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Dict, List
-from ..database import get_db
-from .. import models, schemas
-from ..auth import require_user_sub
-from ..utils import min_cash_flow
+from database import get_db
+import models
+import schemas
+from auth import require_user_sub
+from utils import min_cash_flow
 
 router = APIRouter(prefix="/balances", tags=["balances"])
 
