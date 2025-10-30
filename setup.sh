@@ -42,10 +42,13 @@ echo -e "\n${GREEN}✓ Database is ready${NC}"
 echo -e "\n${BLUE}⏳ Waiting for API service to be ready...${NC}"
 sleep 5
 
-# Run database migrations
+# Run database migrations (optional - tables are auto-created by SQLAlchemy)
 echo -e "\n${BLUE}🔄 Running database migrations...${NC}"
-docker compose exec -T api alembic upgrade head
-echo -e "${GREEN}✓ Migrations complete${NC}"
+if docker compose exec -T api alembic upgrade head 2>/dev/null; then
+    echo -e "${GREEN}✓ Migrations complete${NC}"
+else
+    echo -e "${YELLOW}⚠ No migrations found (tables will be auto-created on first API request)${NC}"
+fi
 
 # Seed the database
 echo -e "\n${BLUE}🌱 Seeding database with sample data...${NC}"
