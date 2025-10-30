@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { --bg: #0b0f19; --card: #121826; }
+body { background: var(--bg); color: #e5e7eb; }
+.card { background: var(--card); border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
+.btn { @apply px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white; }
+.input { @apply px-3 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100 w-full; }
