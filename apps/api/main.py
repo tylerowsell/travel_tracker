@@ -2,7 +2,18 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import Base, engine
-from routers import trips, participants, itinerary, expenses, balances, exchange
+from routers import (
+    trips,
+    participants,
+    itinerary,
+    expenses,
+    balances,
+    exchange,
+    analytics,
+    accommodations,
+    category_budgets,
+    settlements
+)
 
 ENV = os.environ.get("ENV", "local")
 CORS_ORIGINS = [o.strip() for o in os.environ.get("CORS_ORIGINS", "http://localhost:3000").split(",")]
@@ -26,6 +37,10 @@ app.include_router(itinerary.router)
 app.include_router(expenses.router)
 app.include_router(balances.router)
 app.include_router(exchange.router)
+app.include_router(analytics.router)
+app.include_router(accommodations.router)
+app.include_router(category_budgets.router)
+app.include_router(settlements.router)
 
 @app.get("/health")
 def health():
