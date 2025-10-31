@@ -17,6 +17,7 @@ import { ExpenseModal } from "@/components/expense-modal"
 import { ItineraryTimeline } from "@/components/itinerary-timeline"
 import { ItineraryModal } from "@/components/itinerary-modal"
 import { BudgetEditModal } from "@/components/budget-edit-modal"
+import { TripEditModal } from "@/components/trip-edit-modal"
 import { SettlementCalculator } from "@/components/settlement-calculator"
 import { MemberManagement } from "@/components/member-management"
 import { ActivityFeed } from "@/components/activity-feed"
@@ -48,6 +49,7 @@ export default function TripDetailPage() {
   const [expenseToEdit, setExpenseToEdit] = useState<any>(null)
   const [itineraryModal, setItineraryModal] = useState<{ open: boolean; item: any }>({ open: false, item: null })
   const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
+  const [isTripEditModalOpen, setIsTripEditModalOpen] = useState(false)
 
   const { data: trip } = useQuery({
     queryKey: ["trip", id],
@@ -145,8 +147,17 @@ export default function TripDetailPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between gap-4"
       >
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
+            <button
+              onClick={() => setIsTripEditModalOpen(true)}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+              title="Edit trip details"
+            >
+              <Edit2 className="w-5 h-5 text-muted-foreground hover:text-primary" />
+            </button>
+          </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
@@ -513,6 +524,12 @@ export default function TripDetailPage() {
         tripId={Number(id)}
         trip={trip}
         currentBudgets={categoryBudgets}
+      />
+
+      <TripEditModal
+        isOpen={isTripEditModalOpen}
+        onClose={() => setIsTripEditModalOpen(false)}
+        trip={trip}
       />
     </div>
   )
