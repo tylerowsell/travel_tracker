@@ -193,6 +193,14 @@ class UserProfileOut(BaseModel):
     class Config: from_attributes = True
 
 
+class UserProfileCreate(BaseModel):
+    """Create user profile"""
+    email: str
+    display_name: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+
+
 class UserProfileUpdate(BaseModel):
     """User profile update"""
     display_name: Optional[str] = None

@@ -77,29 +77,22 @@ export const useAuth = () => {
 
 // Sync user profile with backend
 async function syncUserProfile(user: User | null | undefined) {
-  if (!user) return;
+  if (!user || !user.email) return;
 
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
+    // Use the sync endpoint to create or update user profile
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/sync`, {
+      method: 'POST',
       headers: {
+        'Content-Type': 'application/json',
         'x-user-sub': user.id,
       },
+      body: JSON.stringify({
+        email: user.email,
+        display_name: user.user_metadata?.display_name || user.email.split('@')[0] || 'User',
+        avatar_url: user.user_metadata?.avatar_url || null,
+      }),
     });
-
-    // If user profile doesn't exist, create it
-    if (response.status === 404) {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/me`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-user-sub': user.id,
-        },
-        body: JSON.stringify({
-          display_name: user.user_metadata?.display_name || user.email?.split('@')[0] || 'User',
-          avatar_url: user.user_metadata?.avatar_url || null,
-        }),
-      });
-    }
   } catch (error) {
     console.error('Error syncing user profile:', error);
   }
