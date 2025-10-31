@@ -1,7 +1,7 @@
 "use client"
 
-import { useRef, useMemo } from "react"
-import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { useRef, Suspense } from "react"
+import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber"
 import { OrbitControls, Stars, Html } from "@react-three/drei"
 import * as THREE from "three"
 import { MapPin, Plane } from "lucide-react"
@@ -33,16 +33,6 @@ function latLngToVector3(lat: number, lng: number, radius: number) {
     radius * Math.cos(phi),
     radius * Math.sin(phi) * Math.sin(theta)
   )
-}
-
-// Improved noise function using multiple techniques
-function noise2D(x: number, y: number) {
-  // Simple 2D noise using sine waves
-  const n1 = Math.sin(x * 5.3 + y * 2.1) * Math.cos(x * 2.9 - y * 4.7)
-  const n2 = Math.sin(x * 8.7 - y * 5.3) * Math.cos(x * 6.1 + y * 3.9)
-  const n3 = Math.sin(x * 13.5 + y * 9.1) * Math.cos(x * 11.3 - y * 7.7)
-
-  return (n1 + n2 * 0.5 + n3 * 0.25) / 1.75
 }
 
 function Landmark({ landmark, radius }: { landmark: Landmark; radius: number }) {
@@ -112,138 +102,14 @@ function Earth() {
   const meshRef = useRef<THREE.Mesh>(null)
   const cloudsRef = useRef<THREE.Mesh>(null)
 
-  // Create realistic earth texture with proper land/water distribution
-  const earthTexture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 2048
-    canvas.height = 1024
-    const ctx = canvas.getContext('2d')!
-
-    // Draw base ocean
-    ctx.fillStyle = '#1a4d7a'
-    ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-    // Generate continents using noise
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const data = imageData.data
-
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
-        const nx = x / canvas.width
-        const ny = y / canvas.height
-
-        // Multiple octaves of noise for realistic continents
-        let elevation = 0
-        let amplitude = 1
-        let frequency = 1
-
-        // Create continent-like structures
-        for (let i = 0; i < 5; i++) {
-          elevation += noise2D(nx * frequency * 3, ny * frequency * 3) * amplitude
-          amplitude *= 0.5
-          frequency *= 2.1
-        }
-
-        // Normalize to 0-1 range
-        elevation = (elevation + 1) / 2
-
-        // Apply latitude-based modification (less land near poles)
-        const latFactor = 1 - Math.abs(ny - 0.5) * 1.5
-        elevation *= Math.max(0.3, latFactor)
-
-        const idx = (y * canvas.width + x) * 4
-
-        // Color based on elevation
-        if (elevation < 0.35) {
-          // Deep ocean - dark blue
-          data[idx] = 15
-          data[idx + 1] = 50 + elevation * 50
-          data[idx + 2] = 100 + elevation * 80
-        } else if (elevation < 0.4) {
-          // Shallow ocean - lighter blue
-          data[idx] = 30 + elevation * 80
-          data[idx + 1] = 90 + elevation * 80
-          data[idx + 2] = 160 + elevation * 40
-        } else if (elevation < 0.43) {
-          // Beach/coast - sandy
-          const sandy = (elevation - 0.4) / 0.03
-          data[idx] = 180 + sandy * 50
-          data[idx + 1] = 160 + sandy * 40
-          data[idx + 2] = 100 + sandy * 30
-        } else if (elevation < 0.6) {
-          // Lowlands - green vegetation
-          const greenLevel = (elevation - 0.43) / 0.17
-          data[idx] = 34 + greenLevel * 80
-          data[idx + 1] = 100 + greenLevel * 80
-          data[idx + 2] = 34 + greenLevel * 40
-        } else if (elevation < 0.75) {
-          // Highlands - brown/tan
-          const brownLevel = (elevation - 0.6) / 0.15
-          data[idx] = 100 + brownLevel * 80
-          data[idx + 1] = 90 + brownLevel * 60
-          data[idx + 2] = 50 + brownLevel * 40
-        } else {
-          // Mountains - gray to white
-          const snowLevel = Math.min(1, (elevation - 0.75) / 0.25)
-          data[idx] = 120 + snowLevel * 135
-          data[idx + 1] = 120 + snowLevel * 135
-          data[idx + 2] = 120 + snowLevel * 135
-        }
-
-        data[idx + 3] = 255
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0)
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.needsUpdate = true
-    return texture
-  }, [])
-
-  // Create cloud layer texture
-  const cloudTexture = useMemo(() => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 1024
-    canvas.height = 512
-    const ctx = canvas.getContext('2d')!
-
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
-    const data = imageData.data
-
-    for (let y = 0; y < canvas.height; y++) {
-      for (let x = 0; x < canvas.width; x++) {
-        const nx = x / canvas.width
-        const ny = y / canvas.height
-
-        let cloudDensity = 0
-        let amplitude = 1
-        let frequency = 1
-
-        for (let i = 0; i < 3; i++) {
-          cloudDensity += noise2D(nx * frequency * 4 + 100, ny * frequency * 4 + 100) * amplitude
-          amplitude *= 0.5
-          frequency *= 2
-        }
-
-        cloudDensity = (cloudDensity + 1) / 2
-
-        const idx = (y * canvas.width + x) * 4
-        const cloud = cloudDensity > 0.6 ? Math.min(255, (cloudDensity - 0.6) * 400) : 0
-
-        data[idx] = 255
-        data[idx + 1] = 255
-        data[idx + 2] = 255
-        data[idx + 3] = cloud
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0)
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.needsUpdate = true
-    return texture
-  }, [])
+  // Load real Earth textures from CDN
+  // Using high-quality 2K textures for optimal performance/quality balance
+  const [colorMap, normalMap, specularMap, cloudsMap] = useLoader(THREE.TextureLoader, [
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg',
+    'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',
+  ])
 
   // Animate rotation
   useFrame((state) => {
@@ -257,47 +123,50 @@ function Earth() {
 
   return (
     <group>
-      {/* Main Earth sphere */}
-      <mesh ref={meshRef}>
+      {/* Main Earth sphere with real textures */}
+      <mesh ref={meshRef} receiveShadow castShadow>
         <sphereGeometry args={[2, 128, 128]} />
-        <meshStandardMaterial
-          map={earthTexture}
-          roughness={0.7}
-          metalness={0.1}
-          emissive={new THREE.Color(0x112244)}
-          emissiveIntensity={0.05}
+        <meshPhongMaterial
+          map={colorMap}
+          normalMap={normalMap}
+          normalScale={new THREE.Vector2(0.85, 0.85)}
+          specularMap={specularMap}
+          specular={new THREE.Color(0x333333)}
+          shininess={25}
+          emissive={new THREE.Color(0x000000)}
         />
       </mesh>
 
-      {/* Cloud layer */}
+      {/* Cloud layer with real cloud texture */}
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[2.01, 64, 64]} />
-        <meshStandardMaterial
-          map={cloudTexture}
+        <meshPhongMaterial
+          map={cloudsMap}
           transparent
-          opacity={0.4}
+          opacity={0.12}
           depthWrite={false}
+          side={THREE.FrontSide}
         />
       </mesh>
 
-      {/* Atmospheric glow */}
+      {/* Atmospheric glow - subtle blue haze */}
       <mesh scale={1.015}>
         <sphereGeometry args={[2, 64, 64]} />
         <meshBasicMaterial
-          color={new THREE.Color(0x4488ff)}
+          color={new THREE.Color(0x6699ff)}
           transparent
-          opacity={0.1}
+          opacity={0.15}
           side={THREE.BackSide}
         />
       </mesh>
 
-      {/* Outer atmosphere */}
-      <mesh scale={1.08}>
+      {/* Outer atmosphere - very subtle */}
+      <mesh scale={1.05}>
         <sphereGeometry args={[2, 32, 32]} />
         <meshBasicMaterial
           color={new THREE.Color(0x88ccff)}
           transparent
-          opacity={0.03}
+          opacity={0.05}
           side={THREE.BackSide}
         />
       </mesh>
@@ -319,30 +188,33 @@ function Scene() {
   return (
     <>
       {/* Ambient light for overall illumination */}
-      <ambientLight intensity={0.4} />
+      <ambientLight intensity={0.5} />
 
-      {/* Main directional light (sun) */}
+      {/* Main directional light (sun) - positioned to show Earth's day side */}
       <directionalLight
         position={[5, 3, 5]}
-        intensity={1.5}
+        intensity={2.0}
         color={new THREE.Color(0xffffff)}
+        castShadow
       />
 
-      {/* Fill light from opposite side */}
+      {/* Fill light from opposite side - subtle blue tint */}
       <directionalLight
         position={[-3, -1, -3]}
-        intensity={0.3}
+        intensity={0.4}
         color={new THREE.Color(0x4488ff)}
       />
 
       {/* Rim light for edge definition */}
       <pointLight
         position={[0, 5, -5]}
-        intensity={0.6}
+        intensity={0.8}
         color={new THREE.Color(0x88ccff)}
       />
 
-      <Earth />
+      <Suspense fallback={null}>
+        <Earth />
+      </Suspense>
 
       {/* Enhanced star field */}
       <Stars
@@ -370,20 +242,33 @@ function Scene() {
   )
 }
 
+function LoadingFallback() {
+  return (
+    <div className="w-full h-full flex items-center justify-center">
+      <div className="text-center space-y-4">
+        <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+        <p className="text-sm text-muted-foreground">Loading Earth...</p>
+      </div>
+    </div>
+  )
+}
+
 export function RealisticGlobe() {
   return (
     <div className="relative w-full h-[500px]">
       {/* Three.js Canvas */}
-      <Canvas
-        className="w-full h-full"
-        gl={{
-          antialias: true,
-          alpha: true,
-          powerPreference: "high-performance"
-        }}
-      >
-        <Scene />
-      </Canvas>
+      <Suspense fallback={<LoadingFallback />}>
+        <Canvas
+          className="w-full h-full"
+          gl={{
+            antialias: true,
+            alpha: true,
+            powerPreference: "high-performance",
+          }}
+        >
+          <Scene />
+        </Canvas>
+      </Suspense>
     </div>
   )
 }
