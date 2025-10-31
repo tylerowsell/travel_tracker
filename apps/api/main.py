@@ -42,6 +42,15 @@ app.include_router(accommodations.router)
 app.include_router(category_budgets.router)
 app.include_router(settlements.router)
 
+@app.get("/")
+def root():
+    return {
+        "message": "Welcome to Travel Tracker API",
+        "version": "0.1.0",
+        "docs": "/docs",
+        "health": "/health"
+    }
+
 @app.get("/health")
 def health():
     return {"status": "ok", "env": ENV}
