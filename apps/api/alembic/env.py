@@ -1,12 +1,21 @@
 import os
+import sys
+from pathlib import Path
 from logging.config import fileConfig
 from sqlalchemy import engine_from_config, pool
 from alembic import context
 
+# Add parent directory to path to import models
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 config = context.config
 fileConfig(config.config_file_name)
 
-target_metadata = None  # Using autogenerate via models import below
+# Import Base from database to enable autogenerate
+from database import Base
+import models  # Import models to register them with Base
+
+target_metadata = Base.metadata
 
 def run_migrations_offline():
     url = os.environ.get("DATABASE_URL")
