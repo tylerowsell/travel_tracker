@@ -15,11 +15,13 @@ import { CategoryBreakdown } from "@/components/charts/category-breakdown"
 import { DailySpendingTrend } from "@/components/charts/daily-spending-trend"
 import { ExpenseModal } from "@/components/expense-modal"
 import { ItineraryTimeline } from "@/components/itinerary-timeline"
+import { ItineraryModal } from "@/components/itinerary-modal"
+import { BudgetEditModal } from "@/components/budget-edit-modal"
 import { SettlementCalculator } from "@/components/settlement-calculator"
 import { MemberManagement } from "@/components/member-management"
 import { ActivityFeed } from "@/components/activity-feed"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Wallet, TrendingUp, Users, Calendar, Plus } from "lucide-react"
+import { Wallet, TrendingUp, Users, Calendar, Plus, Edit2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 // Dynamically import TripMap to avoid SSR issues with Leaflet
@@ -43,6 +45,9 @@ export default function TripDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
+  const [expenseToEdit, setExpenseToEdit] = useState<any>(null)
+  const [itineraryModal, setItineraryModal] = useState<{ open: boolean; item: any }>({ open: false, item: null })
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
 
   const { data: trip } = useQuery({
     queryKey: ["trip", id],
@@ -81,6 +86,14 @@ export default function TripDetailPage() {
     queryKey: ["itinerary", id],
     queryFn: async () => {
       const res = await api.get(`/itinerary/${id}`)
+      return res.data
+    },
+  })
+
+  const { data: categoryBudgets = [] } = useQuery({
+    queryKey: ["category-budgets", id],
+    queryFn: async () => {
+      const res = await api.get(`/category-budgets/${id}`)
       return res.data
     },
   })
@@ -266,8 +279,19 @@ export default function TripDetailPage() {
         <TabsContent value="budget" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Category Breakdown</CardTitle>
-              <CardDescription>Planned vs actual spending by category</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Category Breakdown</CardTitle>
+                  <CardDescription>Planned vs actual spending by category</CardDescription>
+                </div>
+                <button
+                  onClick={() => setIsBudgetModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Budget
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="chart-container">
               {analytics?.categories?.length > 0 ? (
@@ -353,11 +377,26 @@ export default function TripDetailPage() {
         <TabsContent value="itinerary">
           <Card>
             <CardHeader>
-              <CardTitle>Trip Itinerary</CardTitle>
-              <CardDescription>Your complete travel schedule</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Trip Itinerary</CardTitle>
+                  <CardDescription>Your complete travel schedule</CardDescription>
+                </div>
+                <button
+                  onClick={() => setItineraryModal({ open: true, item: null })}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Item
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
-              <ItineraryTimeline items={itinerary} />
+              <ItineraryTimeline
+                items={itinerary}
+                onItemClick={(item) => setItineraryModal({ open: true, item })}
+                onAddClick={() => setItineraryModal({ open: true, item: null })}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -405,6 +444,21 @@ export default function TripDetailPage() {
         onClose={() => setIsExpenseModalOpen(false)}
         onSubmit={handleAddExpense}
         trip={trip}
+      />
+
+      <ItineraryModal
+        isOpen={itineraryModal.open}
+        onClose={() => setItineraryModal({ open: false, item: null })}
+        tripId={Number(id)}
+        item={itineraryModal.item}
+      />
+
+      <BudgetEditModal
+        isOpen={isBudgetModalOpen}
+        onClose={() => setIsBudgetModalOpen(false)}
+        tripId={Number(id)}
+        trip={trip}
+        currentBudgets={categoryBudgets}
       />
     </div>
   )
