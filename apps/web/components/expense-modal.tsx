@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, DollarSign, Calendar, MapPin, FileText, Plus, Minus } from 'lucide-react';
+import { X, DollarSign, Calendar, MapPin, FileText, Plus, Minus, Camera, Upload } from 'lucide-react';
 
 type ExpenseModalProps = {
   isOpen: boolean;
@@ -33,6 +33,9 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
     })) || []
   );
 
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [photoInput, setPhotoInput] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.amount || !formData.payer_id) return;
@@ -44,6 +47,7 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
         ...formData,
         amount: parseFloat(formData.amount),
         fx_rate_to_home: 1.0,
+        receipt_urls: photos.length > 0 ? photos : null,
         splits: selectedSplits.map((s: any) => ({
           participant_id: s.participant_id,
           share_type: s.share_type,
@@ -70,6 +74,8 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
           share_value: null,
         })) || []
       );
+      setPhotos([]);
+      setPhotoInput('');
       onClose();
     } catch (error) {
       console.error('Failed to create expense:', error);
@@ -286,6 +292,74 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
                   );
                 })}
               </div>
+            </div>
+
+            {/* Photo Attachments */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium flex items-center gap-2">
+                <Camera className="w-4 h-4 text-primary" />
+                Receipt Photos (Optional)
+              </label>
+
+              {/* Photo URL Input */}
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={photoInput}
+                  onChange={(e) => setPhotoInput(e.target.value)}
+                  placeholder="Paste image URL (e.g., https://...)"
+                  className="flex-1 px-4 py-3 rounded-lg border border-border bg-input focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (photoInput.trim()) {
+                      setPhotos([...photos, photoInput.trim()]);
+                      setPhotoInput('');
+                    }
+                  }}
+                  className="px-4 py-3 rounded-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Photo List */}
+              {photos.length > 0 && (
+                <div className="space-y-2">
+                  {photos.map((photo, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-3 p-3 rounded-lg border border-border bg-accent/50"
+                    >
+                      <img
+                        src={photo}
+                        alt={`Receipt ${index + 1}`}
+                        className="w-12 h-12 object-cover rounded"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src =
+                            'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="48" height="48"%3E%3Crect fill="%23ddd" width="48" height="48"/%3E%3C/svg%3E';
+                        }}
+                      />
+                      <div className="flex-1 truncate text-sm text-muted-foreground">
+                        {photo}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPhotos(photos.filter((_, i) => i !== index))}
+                        className="p-2 text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                <Upload className="w-3 h-3 inline mr-1" />
+                Tip: Upload images to a service like Imgur or use existing URLs. Full file upload coming soon with Plaid integration!
+              </p>
             </div>
 
             {/* Submit Buttons */}
