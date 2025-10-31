@@ -3,7 +3,6 @@
 import "./globals.css"
 import { ReactNode } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { CustomCursor } from "@/components/custom-cursor"
 import { Plane } from "lucide-react"
 import Link from "next/link"
 
@@ -18,7 +17,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       </head>
       <body>
         <QueryClientProvider client={queryClient}>
-          <CustomCursor />
 
           <div className="min-h-screen">
             <header className="border-b border-border bg-card/50 backdrop-blur-lg sticky top-0 z-40">

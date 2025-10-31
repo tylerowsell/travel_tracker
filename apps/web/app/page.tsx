@@ -5,8 +5,9 @@ import api from "../lib/api"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, MapPin, DollarSign } from "lucide-react"
+import { Calendar, MapPin, DollarSign, TrendingUp, Users } from "lucide-react"
 import { formatDate } from "@/lib/utils"
+import { InteractiveGlobe } from "@/components/interactive-globe"
 
 export default function Home() {
   const { data, isLoading, error } = useQuery({
@@ -58,11 +59,78 @@ export default function Home() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-12">
+      {/* Hero Section with Interactive Globe */}
+      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card/80 to-background p-8 lg:p-12">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left side - Text content */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="space-y-6 z-10"
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20">
+              <TrendingUp className="w-4 h-4 text-primary" />
+              <span className="text-sm font-medium text-primary">Smart Travel Planning</span>
+            </div>
+
+            <h1 className="text-5xl lg:text-6xl font-bold leading-tight">
+              Plan Your Next
+              <span className="gradient-text block mt-2">Adventure</span>
+            </h1>
+
+            <p className="text-lg text-muted-foreground max-w-md">
+              Track budgets, split expenses, and visualize your journey with beautiful analytics.
+              Perfect for solo travelers and groups alike.
+            </p>
+
+            <div className="flex flex-wrap gap-4">
+              <Link href="/new-trip" className="magnetic-btn text-lg">
+                Start Planning →
+              </Link>
+              {data && data.length > 0 && (
+                <button className="px-6 py-3 rounded-lg border border-border hover:bg-accent transition-colors">
+                  View My Trips
+                </button>
+              )}
+            </div>
+
+            {/* Stats */}
+            <div className="flex gap-8 pt-4">
+              <div>
+                <div className="text-3xl font-bold text-primary">{data?.length || 0}</div>
+                <div className="text-sm text-muted-foreground">Active Trips</div>
+              </div>
+              <div>
+                <div className="text-3xl font-bold text-primary">
+                  {data?.reduce((acc: number, t: any) => acc + (t.participants?.length || 0), 0) || 0}
+                </div>
+                <div className="text-sm text-muted-foreground">Travelers</div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Right side - Interactive Globe */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+          >
+            <InteractiveGlobe />
+          </motion.div>
+        </div>
+
+        {/* Background decoration */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -z-10" />
+      </section>
+
+      {/* Trips Section */}
       <div>
-        <h1 className="text-4xl font-bold gradient-text mb-2">Your Trips</h1>
-        <p className="text-muted-foreground">
-          Plan, budget, and track your adventures
+        <h2 className="text-3xl font-bold gradient-text mb-2">Your Trips</h2>
+        <p className="text-muted-foreground mb-6">
+          Manage and track all your adventures
         </p>
       </div>
 

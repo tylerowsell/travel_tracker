@@ -44,15 +44,6 @@
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Custom cursor styles */
-  * {
-    cursor: none;
-  }
-
-  button, a, input, select, textarea {
-    cursor: none;
-  }
-
   /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
@@ -178,6 +169,11 @@
   /* Text utilities */
   .text-balance {
     text-wrap: balance;
+  }
+
+  /* Perspective for 3D transforms */
+  .perspective-1000 {
+    perspective: 1000px;
   }
 
   /* Animation delays */
