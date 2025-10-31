@@ -61,8 +61,8 @@ export default function Home() {
 
   return (
     <div className="space-y-12">
-      {/* Hero Section with Interactive Globe */}
-      <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card/80 to-background p-8 lg:p-12">
+      {/* Hero Section with Interactive Globe - Dark space theme */}
+      <section className="relative overflow-hidden rounded-2xl border border-border/50 p-8 lg:p-12" style={{ backgroundColor: 'hsl(var(--hero-background))' }}>
         {/* Animated star background */}
         <StarBackground />
 

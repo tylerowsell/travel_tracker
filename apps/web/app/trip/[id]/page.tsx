@@ -1,7 +1,8 @@
 "use client"
 
+import { useState } from "react"
 import { useParams } from "next/navigation"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -11,8 +12,11 @@ import { ExpenseCard } from "@/components/expense-card"
 import { BudgetDonut } from "@/components/charts/budget-donut"
 import { CategoryBreakdown } from "@/components/charts/category-breakdown"
 import { DailySpendingTrend } from "@/components/charts/daily-spending-trend"
+import { ExpenseModal } from "@/components/expense-modal"
+import { ItineraryTimeline } from "@/components/itinerary-timeline"
+import { SettlementCalculator } from "@/components/settlement-calculator"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Wallet, TrendingUp, Users, Calendar } from "lucide-react"
+import { Wallet, TrendingUp, Users, Calendar, Plus } from "lucide-react"
 import { motion } from "framer-motion"
 
 const api = axios.create({
@@ -22,6 +26,8 @@ const api = axios.create({
 
 export default function TripDetailPage() {
   const { id } = useParams()
+  const queryClient = useQueryClient()
+  const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
 
   const { data: trip } = useQuery({
     queryKey: ["trip", id],
@@ -56,6 +62,22 @@ export default function TripDetailPage() {
     },
   })
 
+  const { data: itinerary = [] } = useQuery({
+    queryKey: ["itinerary", id],
+    queryFn: async () => {
+      const res = await api.get(`/itinerary/${id}`)
+      return res.data
+    },
+  })
+
+  const handleAddExpense = async (expenseData: any) => {
+    await api.post(`/expenses/${id}`, expenseData)
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["expenses", id] })
+    queryClient.invalidateQueries({ queryKey: ["analytics", id] })
+    queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
+  }
+
   if (!trip) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -72,25 +94,35 @@ export default function TripDetailPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Header with Add Expense Button */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="space-y-2"
+        className="flex items-start justify-between gap-4"
       >
-        <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Calendar className="w-4 h-4" />
-            <span>
-              {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
-            </span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Users className="w-4 h-4" />
-            <span>{trip.participants?.length || 0} travelers</span>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              <span>
+                {formatDate(trip.start_date)} - {formatDate(trip.end_date)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Users className="w-4 h-4" />
+              <span>{trip.participants?.length || 0} travelers</span>
+            </div>
           </div>
         </div>
+
+        <button
+          onClick={() => setIsExpenseModalOpen(true)}
+          className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+        >
+          <Plus className="w-5 h-5" />
+          Add Expense
+        </button>
       </motion.div>
 
       {/* Stats Grid */}
@@ -178,17 +210,35 @@ export default function TripDetailPage() {
           {/* Recent Expenses */}
           <Card>
             <CardHeader>
-              <CardTitle>Recent Expenses</CardTitle>
-              <CardDescription>Latest {Math.min(5, expenses.length)} transactions</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Recent Expenses</CardTitle>
+                  <CardDescription>Latest {Math.min(5, expenses.length)} transactions</CardDescription>
+                </div>
+                <button
+                  onClick={() => setIsExpenseModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.slice(0, 5).map((expense: any, index: number) => (
                 <ExpenseCard key={expense.id} expense={expense} index={index} />
               ))}
               {expenses.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">
-                  No expenses recorded yet
-                </p>
+                <div className="text-center py-8 space-y-4">
+                  <p className="text-muted-foreground">No expenses recorded yet</p>
+                  <button
+                    onClick={() => setIsExpenseModalOpen(true)}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Your First Expense
+                  </button>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -241,17 +291,41 @@ export default function TripDetailPage() {
         <TabsContent value="expenses" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>All Expenses</CardTitle>
-              <CardDescription>Complete expense history</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>All Expenses</CardTitle>
+                  <CardDescription>Complete expense history ({expenses.length} total)</CardDescription>
+                </div>
+                <button
+                  onClick={() => setIsExpenseModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                >
+                  <Plus className="w-5 h-5" />
+                  Add Expense
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.map((expense: any, index: number) => (
                 <ExpenseCard key={expense.id} expense={expense} index={index} />
               ))}
               {expenses.length === 0 && (
-                <p className="text-muted-foreground text-center py-8">
-                  No expenses recorded yet
-                </p>
+                <div className="text-center py-16 space-y-4">
+                  <Wallet className="w-16 h-16 mx-auto text-muted-foreground opacity-50" />
+                  <div>
+                    <h3 className="text-lg font-semibold mb-2">No expenses yet</h3>
+                    <p className="text-muted-foreground mb-4">
+                      Start tracking your trip expenses
+                    </p>
+                    <button
+                      onClick={() => setIsExpenseModalOpen(true)}
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
+                    >
+                      <Plus className="w-5 h-5" />
+                      Add Your First Expense
+                    </button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -262,12 +336,10 @@ export default function TripDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Trip Itinerary</CardTitle>
-              <CardDescription>Your travel schedule</CardDescription>
+              <CardDescription>Your complete travel schedule</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                Itinerary feature coming soon
-              </p>
+              <ItineraryTimeline items={itinerary} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -276,17 +348,23 @@ export default function TripDetailPage() {
         <TabsContent value="split">
           <Card>
             <CardHeader>
-              <CardTitle>Expense Splitting</CardTitle>
-              <CardDescription>See who owes what</CardDescription>
+              <CardTitle>Expense Splitting & Settlements</CardTitle>
+              <CardDescription>See who owes what and suggested settlements</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-muted-foreground text-center py-8">
-                Settlement feature coming soon
-              </p>
+              <SettlementCalculator trip={trip} expenses={expenses} />
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Expense Modal */}
+      <ExpenseModal
+        isOpen={isExpenseModalOpen}
+        onClose={() => setIsExpenseModalOpen(false)}
+        onSubmit={handleAddExpense}
+        trip={trip}
+      />
     </div>
   )
 }
