@@ -1,107 +1,9 @@
 "use client"
 
-import { useRef, Suspense, useState } from "react"
+import { useRef, Suspense } from "react"
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber"
-import { OrbitControls, Stars, Html } from "@react-three/drei"
+import { OrbitControls } from "@react-three/drei"
 import * as THREE from "three"
-import { MapPin, Plane } from "lucide-react"
-
-interface Landmark {
-  name: string
-  lat: number
-  lng: number
-  icon: "pin" | "plane"
-  color: string
-}
-
-const landmarks: Landmark[] = [
-  { name: "Paris", lat: 48.8566, lng: 2.3522, icon: "pin", color: "#6366f1" },
-  { name: "Tokyo", lat: 35.6762, lng: 139.6503, icon: "pin", color: "#8b5cf6" },
-  { name: "New York", lat: 40.7128, lng: -74.0060, icon: "pin", color: "#ec4899" },
-  { name: "Sydney", lat: -33.8688, lng: 151.2093, icon: "pin", color: "#06b6d4" },
-  { name: "London", lat: 51.5074, lng: -0.1278, icon: "plane", color: "#f59e0b" },
-  { name: "Dubai", lat: 25.2048, lng: 55.2708, icon: "pin", color: "#10b981" },
-]
-
-// Convert lat/lng to 3D position on sphere
-function latLngToVector3(lat: number, lng: number, radius: number) {
-  const phi = (90 - lat) * (Math.PI / 180)
-  const theta = (lng + 180) * (Math.PI / 180)
-
-  return new THREE.Vector3(
-    -radius * Math.sin(phi) * Math.cos(theta),
-    radius * Math.cos(phi),
-    radius * Math.sin(phi) * Math.sin(theta)
-  )
-}
-
-function Landmark({ landmark, radius }: { landmark: Landmark; radius: number }) {
-  const position = latLngToVector3(landmark.lat, landmark.lng, radius)
-  const meshRef = useRef<THREE.Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-
-  useFrame((state) => {
-    if (meshRef.current) {
-      // Gentle pulsing animation
-      const scale = 1 + Math.sin(state.clock.elapsedTime * 2) * 0.15
-      meshRef.current.scale.setScalar(scale)
-    }
-  })
-
-  return (
-    <group position={position}>
-      {/* Pin marker with hover detection */}
-      <mesh
-        ref={meshRef}
-        onPointerEnter={() => setHovered(true)}
-        onPointerLeave={() => setHovered(false)}
-      >
-        <sphereGeometry args={[0.06, 16, 16]} />
-        <meshStandardMaterial
-          color={landmark.color}
-          emissive={landmark.color}
-          emissiveIntensity={hovered ? 1.2 : 0.8}
-          metalness={0.3}
-          roughness={0.4}
-        />
-      </mesh>
-
-      {/* Glowing ring around marker */}
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.07, 0.1, 32]} />
-        <meshBasicMaterial
-          color={landmark.color}
-          transparent
-          opacity={hovered ? 0.8 : 0.5}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
-
-      {/* Label - only show on hover */}
-      {hovered && (
-        <Html
-          distanceFactor={6}
-          position={[0, 0.2, 0]}
-          center
-          style={{
-            pointerEvents: "none",
-          }}
-        >
-          <div className="glass px-3 py-1.5 rounded-lg border text-sm font-medium whitespace-nowrap shadow-xl backdrop-blur-md animate-in fade-in zoom-in duration-200">
-            <div className="flex items-center gap-2">
-              {landmark.icon === "pin" ? (
-                <MapPin className="w-3.5 h-3.5" style={{ color: landmark.color }} />
-              ) : (
-                <Plane className="w-3.5 h-3.5" style={{ color: landmark.color }} />
-              )}
-              {landmark.name}
-            </div>
-          </div>
-        </Html>
-      )}
-    </group>
-  )
-}
 
 function Earth() {
   const meshRef = useRef<THREE.Mesh>(null)
@@ -178,11 +80,6 @@ function Earth() {
           side={THREE.BackSide}
         />
       </mesh>
-
-      {/* Landmarks */}
-      {landmarks.map((landmark) => (
-        <Landmark key={landmark.name} landmark={landmark} radius={2.05} />
-      ))}
     </group>
   )
 }
@@ -224,29 +121,21 @@ function Scene() {
         <Earth />
       </Suspense>
 
-      {/* Enhanced star field */}
-      <Stars
-        radius={50}
-        depth={50}
-        count={5000}
-        factor={4}
-        saturation={0}
-        fade
-        speed={0.5}
-      />
-
       {/* Orbit controls with damping for smooth persistence */}
       <OrbitControls
+        makeDefault
         enableZoom={true}
         enablePan={false}
         autoRotate
         autoRotateSpeed={0.3}
         enableDamping
         dampingFactor={0.05}
+        rotateSpeed={0.5}
         minDistance={4}
         maxDistance={10}
         minPolarAngle={Math.PI / 4}
         maxPolarAngle={Math.PI - Math.PI / 4}
+        regress={false}
       />
     </>
   )
@@ -264,18 +153,26 @@ function LoadingFallback() {
 }
 
 export function RealisticGlobe() {
+  const containerRef = useRef<HTMLDivElement>(null)
+
   return (
-    <div className="relative w-full h-[500px]">
+    <div ref={containerRef} className="relative w-full h-[500px]">
       {/* Three.js Canvas with frameloop="always" to prevent pausing on scroll */}
       <Suspense fallback={<LoadingFallback />}>
         <Canvas
           className="w-full h-full"
           frameloop="always"
+          dpr={[1, 2]}
           gl={{
             antialias: true,
             alpha: true,
             powerPreference: "high-performance",
           }}
+          events={(state) => ({
+            ...state.events,
+            enabled: true,
+            priority: 1,
+          })}
         >
           <Scene />
         </Canvas>
