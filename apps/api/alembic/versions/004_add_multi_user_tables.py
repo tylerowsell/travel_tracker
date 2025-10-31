@@ -65,7 +65,7 @@ def upgrade():
         sa.Column('trip_id', sa.Integer(), sa.ForeignKey('trips.id', ondelete='CASCADE'), nullable=False),
         sa.Column('user_id', sa.String(), sa.ForeignKey('user_profiles.id'), nullable=False),
         sa.Column('action_type', sa.String(), nullable=False),  # expense_added, member_joined, etc.
-        sa.Column('metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True),
+        sa.Column('action_metadata', postgresql.JSON(astext_type=sa.Text()), nullable=True),
         sa.Column('created_at', sa.DateTime(), server_default=sa.func.now(), nullable=False),
     )
     op.create_index('ix_activity_log_trip_id', 'activity_log', ['trip_id'])

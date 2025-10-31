@@ -73,7 +73,7 @@ def create_comment(
         trip_id=expense.trip_id,
         user_id=sub,
         action_type="comment_added",
-        metadata={"expense_id": expense_id, "comment_id": comment.id},
+        action_metadata={"expense_id": expense_id, "comment_id": comment.id},
         created_at=datetime.utcnow()
     )
     db.add(activity)

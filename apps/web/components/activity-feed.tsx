@@ -22,7 +22,7 @@ interface ActivityLog {
   trip_id: number;
   user_id: string;
   action_type: string;
-  metadata?: any;
+  action_metadata?: any;
   created_at: string;
   user?: {
     id: string;
@@ -77,7 +77,7 @@ function getActivityMessage(activity: ActivityLog): string {
     case 'comment_added':
       return `${userName} commented on an expense`;
     case 'reaction_added':
-      return `${userName} reacted with ${activity.metadata?.emoji || '❤️'}`;
+      return `${userName} reacted with ${activity.action_metadata?.emoji || '❤️'}`;
     case 'itinerary_added':
       return `${userName} added an itinerary item`;
     case 'itinerary_updated':
@@ -171,14 +171,14 @@ export function ActivityFeed({ tripId }: { tripId: number }) {
                 </span>
               </div>
 
-              {activity.metadata && Object.keys(activity.metadata).length > 0 && (
+              {activity.action_metadata && Object.keys(activity.action_metadata).length > 0 && (
                 <div className="mt-2 text-xs text-muted-foreground">
-                  {activity.metadata.amount && (
-                    <span className="font-mono">${activity.metadata.amount}</span>
+                  {activity.action_metadata.amount && (
+                    <span className="font-mono">${activity.action_metadata.amount}</span>
                   )}
-                  {activity.metadata.category && (
+                  {activity.action_metadata.category && (
                     <span className="ml-2 px-2 py-0.5 bg-accent rounded capitalize">
-                      {activity.metadata.category}
+                      {activity.action_metadata.category}
                     </span>
                   )}
                 </div>

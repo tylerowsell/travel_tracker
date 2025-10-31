@@ -242,7 +242,7 @@ class ActivityLogOut(BaseModel):
     trip_id: int
     user_id: str
     action_type: str
-    metadata: Optional[dict] = None
+    action_metadata: Optional[dict] = None
     created_at: datetime
     user: Optional[UserProfileOut] = None
     class Config: from_attributes = True
