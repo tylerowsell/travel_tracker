@@ -139,7 +139,7 @@ def accept_invite(
         trip_id=invite.trip_id,
         user_id=sub,
         action_type="member_joined",
-        metadata={"invite_id": invite_id},
+        action_metadata={"invite_id": invite_id},
         created_at=datetime.utcnow()
     )
     db.add(activity)

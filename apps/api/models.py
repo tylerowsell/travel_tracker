@@ -226,7 +226,7 @@ class ActivityLog(Base):
     trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = Column(String, ForeignKey("user_profiles.id"), nullable=False)
     action_type = Column(String, nullable=False)  # expense_added, member_joined, etc.
-    metadata = Column(JSON, nullable=True)
+    action_metadata = Column(JSON, nullable=True)
     created_at = Column(DateTime, nullable=False, index=True)
 
     # Relationships
