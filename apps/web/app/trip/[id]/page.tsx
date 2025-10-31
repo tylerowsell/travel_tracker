@@ -24,6 +24,7 @@ import { ActivityFeed } from "@/components/activity-feed"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { Wallet, TrendingUp, Users, Calendar, Plus, Edit2 } from "lucide-react"
 import { motion } from "framer-motion"
+import { useAuth } from "@/contexts/auth-context"
 
 // Dynamically import TripMap to avoid SSR issues with Leaflet
 const TripMap = dynamic(() => import('@/components/trip-map').then(mod => ({ default: mod.TripMap })), {
@@ -37,13 +38,9 @@ const TripMap = dynamic(() => import('@/components/trip-map').then(mod => ({ def
   ),
 })
 
-const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
-  headers: { "x-user-sub": "dev-user-sub" },
-})
-
 export default function TripDetailPage() {
   const { id } = useParams()
+  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [expenseToEdit, setExpenseToEdit] = useState<any>(null)
@@ -54,54 +51,73 @@ export default function TripDetailPage() {
   const { data: trip } = useQuery({
     queryKey: ["trip", id],
     queryFn: async () => {
-      const res = await api.get(`/trips/${id}`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/trips/${id}`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
+    enabled: !!user,
   })
 
   const { data: expenses = [] } = useQuery({
     queryKey: ["expenses", id],
     queryFn: async () => {
-      const res = await api.get(`/expenses/${id}`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${id}`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
+    enabled: !!user,
   })
 
   const { data: analytics } = useQuery({
     queryKey: ["analytics", id],
     queryFn: async () => {
-      const res = await api.get(`/analytics/${id}/budget-vs-actual`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/${id}/budget-vs-actual`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
-    enabled: !!trip,
+    enabled: !!trip && !!user,
   })
 
   const { data: dailyTrends } = useQuery({
     queryKey: ["daily-trends", id],
     queryFn: async () => {
-      const res = await api.get(`/analytics/${id}/daily-trends`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/analytics/${id}/daily-trends`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
+    enabled: !!user,
   })
 
   const { data: itinerary = [] } = useQuery({
     queryKey: ["itinerary", id],
     queryFn: async () => {
-      const res = await api.get(`/itinerary/${id}`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/itinerary/${id}`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
+    enabled: !!user,
   })
 
   const { data: categoryBudgets = [] } = useQuery({
     queryKey: ["category-budgets", id],
     queryFn: async () => {
-      const res = await api.get(`/category-budgets/${id}`)
+      const res = await axios.get(`${process.env.NEXT_PUBLIC_API_URL}/category-budgets/${id}`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
       return res.data
     },
+    enabled: !!user,
   })
 
   const handleAddExpense = async (expenseData: any) => {
-    await api.post(`/expenses/${id}`, expenseData)
+    await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${id}`, expenseData, {
+      headers: { "x-user-sub": user?.id || "" },
+    })
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["expenses", id] })
     queryClient.invalidateQueries({ queryKey: ["analytics", id] })
@@ -109,7 +125,9 @@ export default function TripDetailPage() {
   }
 
   const handleEditExpense = async (expenseData: any) => {
-    await api.put(`/expenses/${id}/${expenseToEdit.id}`, expenseData)
+    await axios.put(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${id}/${expenseToEdit.id}`, expenseData, {
+      headers: { "x-user-sub": user?.id || "" },
+    })
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["expenses", id] })
     queryClient.invalidateQueries({ queryKey: ["analytics", id] })
@@ -118,7 +136,9 @@ export default function TripDetailPage() {
   }
 
   const handleDeleteExpense = async (expenseId: number) => {
-    await api.delete(`/expenses/${id}/${expenseId}`)
+    await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${id}/${expenseId}`, {
+      headers: { "x-user-sub": user?.id || "" },
+    })
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["expenses", id] })
     queryClient.invalidateQueries({ queryKey: ["analytics", id] })
