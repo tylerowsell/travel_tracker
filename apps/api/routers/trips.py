@@ -117,6 +117,15 @@ def fix_trip_ownership(db: Session = Depends(get_db), sub: str = Depends(require
     Fix ownership of trips created with dev-user-sub.
     This endpoint transfers all trips owned by 'dev-user-sub' to the current authenticated user.
     """
+    # Prevent fixing if the current user is still "dev-user-sub" (AUTH_DISABLED=true)
+    if sub == "dev-user-sub":
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot fix ownership: You are currently authenticated as 'dev-user-sub'. "
+                   "Please make sure authentication is enabled and you're logged in with a real account. "
+                   "Set AUTH_DISABLED=false in your .env file or ensure you're using proper Supabase authentication."
+        )
+
     # Find all trips owned by dev-user-sub
     old_trips = db.query(models.Trip).filter(models.Trip.owner_sub == "dev-user-sub").all()
 

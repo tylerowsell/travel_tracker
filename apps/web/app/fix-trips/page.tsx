@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 
@@ -11,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function FixTripsPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
 
@@ -40,9 +42,17 @@ export default function FixTripsPage() {
         message: data.message,
       });
 
+      // Invalidate all trip-related queries to force fresh data
+      queryClient.invalidateQueries({ queryKey: ['trip'] });
+      queryClient.invalidateQueries({ queryKey: ['trip-members'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      queryClient.invalidateQueries({ queryKey: ['analytics'] });
+
       // Refresh after 2 seconds
       setTimeout(() => {
         router.push('/');
+        // Force a hard refresh of the page to clear all caches
+        window.location.href = '/';
       }, 2000);
     } catch (error: any) {
       setResult({
@@ -80,9 +90,14 @@ export default function FixTripsPage() {
         <div className="text-center mb-6">
           <RefreshCw className="w-12 h-12 text-primary mx-auto mb-4" />
           <h1 className="text-2xl font-bold mb-2">Fix Trip Ownership</h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-2">
             This will transfer ownership of any trips created with the development user ID to your account.
           </p>
+          {user && (
+            <p className="text-xs text-muted-foreground/70 mt-2">
+              Your user ID: {user.id}
+            </p>
+          )}
         </div>
 
         {result && (
@@ -104,9 +119,14 @@ export default function FixTripsPage() {
               </p>
             </div>
             {result.success && (
-              <p className="text-sm text-muted-foreground mt-2">
-                Redirecting to home page...
-              </p>
+              <div className="mt-3 space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  Redirecting to home page...
+                </p>
+                <p className="text-xs text-muted-foreground/70">
+                  Note: If you have any trip pages open, please refresh them to see your ownership rights.
+                </p>
+              </div>
             )}
           </div>
         )}
