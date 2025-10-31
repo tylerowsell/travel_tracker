@@ -109,3 +109,51 @@ def update_trip(
     db.commit()
     db.refresh(trip)
     return trip
+
+
+@router.post("/fix-ownership", response_model=dict)
+def fix_trip_ownership(db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
+    """
+    Fix ownership of trips created with dev-user-sub.
+    This endpoint transfers all trips owned by 'dev-user-sub' to the current authenticated user.
+    """
+    # Find all trips owned by dev-user-sub
+    old_trips = db.query(models.Trip).filter(models.Trip.owner_sub == "dev-user-sub").all()
+
+    if not old_trips:
+        return {
+            "message": "No trips found with dev-user-sub ownership",
+            "trips_updated": 0
+        }
+
+    trips_updated = 0
+
+    for trip in old_trips:
+        # Update trip ownership
+        trip.owner_sub = sub
+        trips_updated += 1
+
+        # Update participants if they have user_sub = dev-user-sub
+        participants = db.query(models.Participant).filter(
+            models.Participant.trip_id == trip.id,
+            models.Participant.user_sub == "dev-user-sub"
+        ).all()
+
+        for participant in participants:
+            participant.user_sub = sub
+
+        # Update trip members if they exist
+        members = db.query(models.TripMember).filter(
+            models.TripMember.trip_id == trip.id,
+            models.TripMember.user_id == "dev-user-sub"
+        ).all()
+
+        for member in members:
+            member.user_id = sub
+
+    db.commit()
+
+    return {
+        "message": f"Successfully transferred ownership of {trips_updated} trip(s) to your account",
+        "trips_updated": trips_updated
+    }
