@@ -16,6 +16,8 @@ import { DailySpendingTrend } from "@/components/charts/daily-spending-trend"
 import { ExpenseModal } from "@/components/expense-modal"
 import { ItineraryTimeline } from "@/components/itinerary-timeline"
 import { SettlementCalculator } from "@/components/settlement-calculator"
+import { MemberManagement } from "@/components/member-management"
+import { ActivityFeed } from "@/components/activity-feed"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { Wallet, TrendingUp, Users, Calendar, Plus } from "lucide-react"
 import { motion } from "framer-motion"
@@ -170,13 +172,15 @@ export default function TripDetailPage() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="budget">Budget</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
           <TabsTrigger value="map">Map</TabsTrigger>
           <TabsTrigger value="split">Split</TabsTrigger>
+          <TabsTrigger value="members">Members</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -372,6 +376,24 @@ export default function TripDetailPage() {
             </CardHeader>
             <CardContent>
               <SettlementCalculator trip={trip} expenses={expenses} />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Members Tab */}
+        <TabsContent value="members">
+          <MemberManagement tripId={trip.id} ownerSub={trip.owner_sub} />
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity">
+          <Card>
+            <CardHeader>
+              <CardTitle>Activity Feed</CardTitle>
+              <CardDescription>Real-time updates on trip changes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ActivityFeed tripId={trip.id} />
             </CardContent>
           </Card>
         </TabsContent>
