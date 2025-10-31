@@ -34,6 +34,15 @@ class TripOut(BaseModel):
     participants: List[ParticipantOut] = []
     class Config: from_attributes = True
 
+
+class TripUpdate(BaseModel):
+    title: Optional[str] = None
+    destination: Optional[str] = None
+    start_date: Optional[date] = None
+    end_date: Optional[date] = None
+    total_budget: Optional[float] = None
+    per_diem_budget: Optional[float] = None
+
 class ItineraryItemCreate(BaseModel):
     start_dt: datetime
     end_dt: Optional[datetime] = None
