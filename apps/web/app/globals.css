@@ -2,8 +2,194 @@
 @tailwind components;
 @tailwind utilities;
 
-:root { --bg: #0b0f19; --card: #121826; }
-body { background: var(--bg); color: #e5e7eb; }
-.card { background: var(--card); border: 1px solid #1f2937; border-radius: 12px; padding: 16px; }
-.btn { @apply px-3 py-2 rounded bg-indigo-600 hover:bg-indigo-500 text-white; }
-.input { @apply px-3 py-2 rounded bg-gray-800 border border-gray-700 text-gray-100 w-full; }
+@layer base {
+  :root {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 239 84% 67%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 239 84% 67%;
+
+    --radius: 0.75rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  /* Custom cursor styles */
+  * {
+    cursor: none;
+  }
+
+  button, a, input, select, textarea {
+    cursor: none;
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: hsl(var(--background));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--primary));
+  }
+}
+
+@layer components {
+  /* Card component */
+  .card {
+    @apply rounded-lg border bg-card text-card-foreground shadow-lg;
+  }
+
+  /* Glassmorphism effect */
+  .glass {
+    @apply bg-card/50 backdrop-blur-xl border-white/10;
+  }
+
+  /* Gradient text */
+  .gradient-text {
+    @apply bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent;
+  }
+
+  /* Stat card */
+  .stat-card {
+    @apply card p-6 hover:shadow-xl transition-shadow duration-300;
+  }
+
+  /* Chart container */
+  .chart-container {
+    @apply w-full h-80 rounded-lg p-4;
+  }
+
+  /* Budget indicator */
+  .budget-bar {
+    @apply h-2 rounded-full bg-muted overflow-hidden;
+  }
+
+  .budget-fill {
+    @apply h-full transition-all duration-500 ease-out;
+  }
+
+  /* Magnetic button effect */
+  .magnetic-btn {
+    @apply relative inline-flex items-center justify-center px-6 py-3
+           rounded-lg font-medium transition-all duration-300
+           bg-primary text-primary-foreground
+           hover:shadow-lg hover:scale-105;
+  }
+
+  /* Shimmer loading effect */
+  .shimmer {
+    @apply relative overflow-hidden;
+  }
+
+  .shimmer::after {
+    @apply absolute inset-0 translate-x-[-100%];
+    content: "";
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  @keyframes shimmer {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Expense category badge */
+  .category-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .category-badge.accommodation {
+    @apply bg-blue-500/10 text-blue-400 border border-blue-500/20;
+  }
+
+  .category-badge.food {
+    @apply bg-green-500/10 text-green-400 border border-green-500/20;
+  }
+
+  .category-badge.transport {
+    @apply bg-yellow-500/10 text-yellow-400 border border-yellow-500/20;
+  }
+
+  .category-badge.activities {
+    @apply bg-purple-500/10 text-purple-400 border border-purple-500/20;
+  }
+
+  .category-badge.shopping {
+    @apply bg-pink-500/10 text-pink-400 border border-pink-500/20;
+  }
+
+  .category-badge.other {
+    @apply bg-gray-500/10 text-gray-400 border border-gray-500/20;
+  }
+}
+
+@layer utilities {
+  /* Text utilities */
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  /* Animation delays */
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+}
