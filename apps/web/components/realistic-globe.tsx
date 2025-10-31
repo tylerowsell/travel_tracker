@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, Suspense } from "react"
+import { useRef, Suspense, useState } from "react"
 import { Canvas, useFrame, useThree, useLoader } from "@react-three/fiber"
 import { OrbitControls, Stars, Html } from "@react-three/drei"
 import * as THREE from "three"
@@ -38,6 +38,7 @@ function latLngToVector3(lat: number, lng: number, radius: number) {
 function Landmark({ landmark, radius }: { landmark: Landmark; radius: number }) {
   const position = latLngToVector3(landmark.lat, landmark.lng, radius)
   const meshRef = useRef<THREE.Mesh>(null)
+  const [hovered, setHovered] = useState(false)
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -49,13 +50,17 @@ function Landmark({ landmark, radius }: { landmark: Landmark; radius: number }) 
 
   return (
     <group position={position}>
-      {/* Pin marker */}
-      <mesh ref={meshRef}>
-        <sphereGeometry args={[0.05, 16, 16]} />
+      {/* Pin marker with hover detection */}
+      <mesh
+        ref={meshRef}
+        onPointerEnter={() => setHovered(true)}
+        onPointerLeave={() => setHovered(false)}
+      >
+        <sphereGeometry args={[0.06, 16, 16]} />
         <meshStandardMaterial
           color={landmark.color}
           emissive={landmark.color}
-          emissiveIntensity={0.8}
+          emissiveIntensity={hovered ? 1.2 : 0.8}
           metalness={0.3}
           roughness={0.4}
         />
@@ -63,37 +68,37 @@ function Landmark({ landmark, radius }: { landmark: Landmark; radius: number }) 
 
       {/* Glowing ring around marker */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.06, 0.08, 32]} />
+        <ringGeometry args={[0.07, 0.1, 32]} />
         <meshBasicMaterial
           color={landmark.color}
           transparent
-          opacity={0.6}
+          opacity={hovered ? 0.8 : 0.5}
           side={THREE.DoubleSide}
         />
       </mesh>
 
-      {/* Label */}
-      <Html
-        distanceFactor={6}
-        position={[0, 0.15, 0]}
-        center
-        style={{
-          transition: "all 0.2s",
-          opacity: 0.9,
-          pointerEvents: "none",
-        }}
-      >
-        <div className="glass px-3 py-1 rounded-lg border text-sm font-medium whitespace-nowrap shadow-xl backdrop-blur-md">
-          <div className="flex items-center gap-2">
-            {landmark.icon === "pin" ? (
-              <MapPin className="w-3 h-3" style={{ color: landmark.color }} />
-            ) : (
-              <Plane className="w-3 h-3" style={{ color: landmark.color }} />
-            )}
-            {landmark.name}
+      {/* Label - only show on hover */}
+      {hovered && (
+        <Html
+          distanceFactor={6}
+          position={[0, 0.2, 0]}
+          center
+          style={{
+            pointerEvents: "none",
+          }}
+        >
+          <div className="glass px-3 py-1.5 rounded-lg border text-sm font-medium whitespace-nowrap shadow-xl backdrop-blur-md animate-in fade-in zoom-in duration-200">
+            <div className="flex items-center gap-2">
+              {landmark.icon === "pin" ? (
+                <MapPin className="w-3.5 h-3.5" style={{ color: landmark.color }} />
+              ) : (
+                <Plane className="w-3.5 h-3.5" style={{ color: landmark.color }} />
+              )}
+              {landmark.name}
+            </div>
           </div>
-        </div>
-      </Html>
+        </Html>
+      )}
     </group>
   )
 }
@@ -103,13 +108,15 @@ function Earth() {
   const cloudsRef = useRef<THREE.Mesh>(null)
 
   // Load real Earth textures from CDN
-  // Using high-quality 2K textures for optimal performance/quality balance
   const [colorMap, normalMap, specularMap, cloudsMap] = useLoader(THREE.TextureLoader, [
     'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
     'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg',
     'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg',
     'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png',
   ])
+
+  // Brighten and enhance colors
+  colorMap.encoding = THREE.sRGBEncoding
 
   // Animate rotation
   useFrame((state) => {
@@ -123,7 +130,7 @@ function Earth() {
 
   return (
     <group>
-      {/* Main Earth sphere with real textures */}
+      {/* Main Earth sphere with enhanced brightness */}
       <mesh ref={meshRef} receiveShadow castShadow>
         <sphereGeometry args={[2, 128, 128]} />
         <meshPhongMaterial
@@ -131,42 +138,43 @@ function Earth() {
           normalMap={normalMap}
           normalScale={new THREE.Vector2(0.85, 0.85)}
           specularMap={specularMap}
-          specular={new THREE.Color(0x333333)}
-          shininess={25}
-          emissive={new THREE.Color(0x000000)}
+          specular={new THREE.Color(0x666666)}
+          shininess={35}
+          emissive={new THREE.Color(0x112244)}
+          emissiveIntensity={0.15}
         />
       </mesh>
 
-      {/* Cloud layer with real cloud texture */}
+      {/* Cloud layer */}
       <mesh ref={cloudsRef}>
         <sphereGeometry args={[2.01, 64, 64]} />
         <meshPhongMaterial
           map={cloudsMap}
           transparent
-          opacity={0.12}
+          opacity={0.15}
           depthWrite={false}
           side={THREE.FrontSide}
         />
       </mesh>
 
-      {/* Atmospheric glow - subtle blue haze */}
+      {/* Atmospheric glow - more vibrant */}
       <mesh scale={1.015}>
         <sphereGeometry args={[2, 64, 64]} />
         <meshBasicMaterial
-          color={new THREE.Color(0x6699ff)}
+          color={new THREE.Color(0x5599ff)}
           transparent
-          opacity={0.15}
+          opacity={0.2}
           side={THREE.BackSide}
         />
       </mesh>
 
-      {/* Outer atmosphere - very subtle */}
+      {/* Outer atmosphere */}
       <mesh scale={1.05}>
         <sphereGeometry args={[2, 32, 32]} />
         <meshBasicMaterial
           color={new THREE.Color(0x88ccff)}
           transparent
-          opacity={0.05}
+          opacity={0.08}
           side={THREE.BackSide}
         />
       </mesh>
@@ -187,28 +195,28 @@ function Scene() {
 
   return (
     <>
-      {/* Ambient light for overall illumination */}
-      <ambientLight intensity={0.5} />
+      {/* Brighter ambient light */}
+      <ambientLight intensity={0.7} />
 
-      {/* Main directional light (sun) - positioned to show Earth's day side */}
+      {/* Main directional light - brighter and warmer */}
       <directionalLight
         position={[5, 3, 5]}
-        intensity={2.0}
+        intensity={2.5}
         color={new THREE.Color(0xffffff)}
         castShadow
       />
 
-      {/* Fill light from opposite side - subtle blue tint */}
+      {/* Fill light - brighter */}
       <directionalLight
         position={[-3, -1, -3]}
-        intensity={0.4}
-        color={new THREE.Color(0x4488ff)}
+        intensity={0.6}
+        color={new THREE.Color(0x5588ff)}
       />
 
-      {/* Rim light for edge definition */}
+      {/* Rim light */}
       <pointLight
         position={[0, 5, -5]}
-        intensity={0.8}
+        intensity={1.0}
         color={new THREE.Color(0x88ccff)}
       />
 
@@ -227,12 +235,14 @@ function Scene() {
         speed={0.5}
       />
 
-      {/* Orbit controls for mouse interaction */}
+      {/* Orbit controls with damping for smooth persistence */}
       <OrbitControls
         enableZoom={true}
         enablePan={false}
         autoRotate
         autoRotateSpeed={0.3}
+        enableDamping
+        dampingFactor={0.05}
         minDistance={4}
         maxDistance={10}
         minPolarAngle={Math.PI / 4}
@@ -256,10 +266,11 @@ function LoadingFallback() {
 export function RealisticGlobe() {
   return (
     <div className="relative w-full h-[500px]">
-      {/* Three.js Canvas */}
+      {/* Three.js Canvas with frameloop="always" to prevent pausing on scroll */}
       <Suspense fallback={<LoadingFallback />}>
         <Canvas
           className="w-full h-full"
+          frameloop="always"
           gl={{
             antialias: true,
             alpha: true,

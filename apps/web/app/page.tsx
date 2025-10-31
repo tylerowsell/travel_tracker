@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Calendar, MapPin, DollarSign, TrendingUp, Users } from "lucide-react"
 import { formatDate } from "@/lib/utils"
 import { RealisticGlobe } from "@/components/realistic-globe"
+import { StarBackground } from "@/components/star-background"
 
 export default function Home() {
   const { data, isLoading, error } = useQuery({
@@ -62,7 +63,10 @@ export default function Home() {
     <div className="space-y-12">
       {/* Hero Section with Interactive Globe */}
       <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card/80 to-background p-8 lg:p-12">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+        {/* Animated star background */}
+        <StarBackground />
+
+        <div className="grid lg:grid-cols-2 gap-12 items-center relative z-10">
           {/* Left side - Text content */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -116,14 +120,15 @@ export default function Home() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
+            className="relative z-10"
           >
             <RealisticGlobe />
           </motion.div>
         </div>
 
-        {/* Background decoration */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -z-10" />
+        {/* Background decoration - positioned below star background */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-3xl -z-20" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/5 rounded-full blur-3xl -z-20" />
       </section>
 
       {/* Trips Section */}
