@@ -7,7 +7,7 @@ import { motion } from "framer-motion"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Calendar, MapPin, DollarSign, TrendingUp, Users } from "lucide-react"
 import { formatDate } from "@/lib/utils"
-import { InteractiveGlobe } from "@/components/interactive-globe"
+import { RealisticGlobe } from "@/components/realistic-globe"
 
 export default function Home() {
   const { data, isLoading, error } = useQuery({
@@ -111,13 +111,13 @@ export default function Home() {
             </div>
           </motion.div>
 
-          {/* Right side - Interactive Globe */}
+          {/* Right side - Realistic Globe */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.7, delay: 0.2 }}
           >
-            <InteractiveGlobe />
+            <RealisticGlobe />
           </motion.div>
         </div>
 
