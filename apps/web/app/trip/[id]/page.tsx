@@ -106,6 +106,23 @@ export default function TripDetailPage() {
     queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
   }
 
+  const handleEditExpense = async (expenseData: any) => {
+    await api.put(`/expenses/${id}/${expenseToEdit.id}`, expenseData)
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["expenses", id] })
+    queryClient.invalidateQueries({ queryKey: ["analytics", id] })
+    queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
+    setExpenseToEdit(null)
+  }
+
+  const handleDeleteExpense = async (expenseId: number) => {
+    await api.delete(`/expenses/${id}/${expenseId}`)
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["expenses", id] })
+    queryClient.invalidateQueries({ queryKey: ["analytics", id] })
+    queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
+  }
+
   if (!trip) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -145,7 +162,10 @@ export default function TripDetailPage() {
         </div>
 
         <button
-          onClick={() => setIsExpenseModalOpen(true)}
+          onClick={() => {
+            setExpenseToEdit(null)
+            setIsExpenseModalOpen(true)
+          }}
           className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <Plus className="w-5 h-5" />
@@ -247,7 +267,10 @@ export default function TripDetailPage() {
                   <CardDescription>Latest {Math.min(5, expenses.length)} transactions</CardDescription>
                 </div>
                 <button
-                  onClick={() => setIsExpenseModalOpen(true)}
+                  onClick={() => {
+                    setExpenseToEdit(null)
+                    setIsExpenseModalOpen(true)
+                  }}
                   className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -257,13 +280,25 @@ export default function TripDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.slice(0, 5).map((expense: any, index: number) => (
-                <ExpenseCard key={expense.id} expense={expense} index={index} />
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  index={index}
+                  onEdit={(exp) => {
+                    setExpenseToEdit(exp)
+                    setIsExpenseModalOpen(true)
+                  }}
+                  onDelete={handleDeleteExpense}
+                />
               ))}
               {expenses.length === 0 && (
                 <div className="text-center py-8 space-y-4">
                   <p className="text-muted-foreground">No expenses recorded yet</p>
                   <button
-                    onClick={() => setIsExpenseModalOpen(true)}
+                    onClick={() => {
+                      setExpenseToEdit(null)
+                      setIsExpenseModalOpen(true)
+                    }}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                   >
                     <Plus className="w-4 h-4" />
@@ -339,7 +374,10 @@ export default function TripDetailPage() {
                   <CardDescription>Complete expense history ({expenses.length} total)</CardDescription>
                 </div>
                 <button
-                  onClick={() => setIsExpenseModalOpen(true)}
+                  onClick={() => {
+                    setExpenseToEdit(null)
+                    setIsExpenseModalOpen(true)
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                   <Plus className="w-5 h-5" />
@@ -349,7 +387,16 @@ export default function TripDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.map((expense: any, index: number) => (
-                <ExpenseCard key={expense.id} expense={expense} index={index} />
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  index={index}
+                  onEdit={(exp) => {
+                    setExpenseToEdit(exp)
+                    setIsExpenseModalOpen(true)
+                  }}
+                  onDelete={handleDeleteExpense}
+                />
               ))}
               {expenses.length === 0 && (
                 <div className="text-center py-16 space-y-4">
@@ -360,7 +407,10 @@ export default function TripDetailPage() {
                       Start tracking your trip expenses
                     </p>
                     <button
-                      onClick={() => setIsExpenseModalOpen(true)}
+                      onClick={() => {
+                        setExpenseToEdit(null)
+                        setIsExpenseModalOpen(true)
+                      }}
                       className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                     >
                       <Plus className="w-5 h-5" />
@@ -441,9 +491,13 @@ export default function TripDetailPage() {
       {/* Expense Modal */}
       <ExpenseModal
         isOpen={isExpenseModalOpen}
-        onClose={() => setIsExpenseModalOpen(false)}
-        onSubmit={handleAddExpense}
+        onClose={() => {
+          setIsExpenseModalOpen(false)
+          setExpenseToEdit(null)
+        }}
+        onSubmit={expenseToEdit ? handleEditExpense : handleAddExpense}
         trip={trip}
+        expense={expenseToEdit}
       />
 
       <ItineraryModal
