@@ -4,35 +4,46 @@
 
 @layer base {
   :root {
-    --background: 222.2 84% 4.9%;
+    /* Brighter background for better readability */
+    --background: 224 20% 12%;
     --foreground: 210 40% 98%;
 
-    --card: 222.2 84% 8%;
+    /* Lighter cards that pop from the background */
+    --card: 220 15% 18%;
     --card-foreground: 210 40% 98%;
 
-    --popover: 222.2 84% 8%;
+    --popover: 220 15% 18%;
     --popover-foreground: 210 40% 98%;
 
+    /* Vibrant primary color */
     --primary: 239 84% 67%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary-foreground: 255 100% 100%;
 
-    --secondary: 217.2 32.6% 17.5%;
+    /* Lighter secondary elements */
+    --secondary: 217 20% 25%;
     --secondary-foreground: 210 40% 98%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    /* Brighter muted elements */
+    --muted: 217 15% 28%;
+    --muted-foreground: 215 20% 75%;
 
-    --accent: 217.2 32.6% 17.5%;
+    /* Lighter accent */
+    --accent: 217 20% 25%;
     --accent-foreground: 210 40% 98%;
 
-    --destructive: 0 62.8% 30.6%;
+    /* Brighter destructive */
+    --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
+    /* Lighter borders */
+    --border: 217 15% 28%;
+    --input: 217 15% 24%;
     --ring: 239 84% 67%;
 
     --radius: 0.75rem;
+
+    /* Hero stays dark for space theme */
+    --hero-background: 222 84% 4%;
   }
 
   * {
