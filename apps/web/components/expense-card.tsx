@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion"
 import { formatCurrency, formatDate, cn } from "@/lib/utils"
-import { MapPin, Receipt } from "lucide-react"
+import { MapPin, Receipt, Edit2, Trash2 } from "lucide-react"
 
 interface ExpenseCardProps {
   expense: {
@@ -17,9 +17,11 @@ interface ExpenseCardProps {
     payer_id: number
   }
   index: number
+  onEdit?: (expense: any) => void
+  onDelete?: (expenseId: number) => void
 }
 
-export function ExpenseCard({ expense, index }: ExpenseCardProps) {
+export function ExpenseCard({ expense, index, onEdit, onDelete }: ExpenseCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -20 }}
@@ -38,6 +40,38 @@ export function ExpenseCard({ expense, index }: ExpenseCardProps) {
             <span className="text-xs text-muted-foreground">
               {formatDate(expense.dt)}
             </span>
+
+            {/* Edit/Delete buttons (show on hover) */}
+            {(onEdit || onDelete) && (
+              <div className="ml-auto flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {onEdit && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit(expense);
+                    }}
+                    className="p-1.5 hover:bg-primary/10 rounded transition-colors"
+                    title="Edit expense"
+                  >
+                    <Edit2 className="w-4 h-4 text-primary" />
+                  </button>
+                )}
+                {onDelete && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (confirm('Are you sure you want to delete this expense?')) {
+                        onDelete(expense.id);
+                      }
+                    }}
+                    className="p-1.5 hover:bg-red-500/10 rounded transition-colors"
+                    title="Delete expense"
+                  >
+                    <Trash2 className="w-4 h-4 text-red-400" />
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           {expense.merchant_name && (

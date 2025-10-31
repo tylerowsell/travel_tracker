@@ -6,6 +6,8 @@ import { formatDate } from '@/lib/utils';
 
 type ItineraryTimelineProps = {
   items: any[];
+  onItemClick?: (item: any) => void;
+  onAddClick?: () => void;
 };
 
 const typeIcons: Record<string, any> = {
@@ -24,16 +26,25 @@ const typeColors: Record<string, string> = {
   note: 'text-gray-400 bg-gray-500/10 border-gray-500/20',
 };
 
-export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
+export function ItineraryTimeline({ items, onItemClick, onAddClick }: ItineraryTimelineProps) {
   if (!items || items.length === 0) {
     return (
       <div className="text-center py-16 space-y-4">
         <Calendar className="w-16 h-16 mx-auto text-muted-foreground opacity-50" />
         <div>
           <h3 className="text-lg font-semibold mb-2">No itinerary items yet</h3>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-4">
             Add flights, accommodations, activities, and more to plan your trip
           </p>
+          {onAddClick && (
+            <button
+              onClick={onAddClick}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            >
+              <Calendar className="w-5 h-5" />
+              Add Itinerary Item
+            </button>
+          )}
         </div>
       </div>
     );
@@ -58,7 +69,10 @@ export function ItineraryTimeline({ items }: ItineraryTimelineProps) {
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="relative pl-8 pb-8 border-l-2 border-border last:pb-0"
+            onClick={() => onItemClick?.(item)}
+            className={`relative pl-8 pb-8 border-l-2 border-border last:pb-0 ${
+              onItemClick ? 'cursor-pointer hover:bg-accent/30 rounded-lg -mx-2 px-4' : ''
+            }`}
           >
             {/* Timeline dot */}
             <div className={`absolute left-0 top-0 -translate-x-1/2 w-8 h-8 rounded-full border-2 flex items-center justify-center ${colorClass}`}>

@@ -30,11 +30,82 @@ def create_trip(payload: schemas.TripCreate, db: Session = Depends(get_db), sub:
 
 @router.get("", response_model=List[schemas.TripOut])
 def list_trips(db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
-    return db.query(models.Trip).filter(models.Trip.owner_sub == sub).all()
+    """List all trips (owned + shared)"""
+    # Get trips where user is owner
+    owned_trips = db.query(models.Trip).filter(models.Trip.owner_sub == sub).all()
+
+    # Get trips where user is a member
+    memberships = db.query(models.TripMember).filter(
+        models.TripMember.user_id == sub,
+        models.TripMember.invite_status == "accepted"
+    ).all()
+
+    shared_trip_ids = [m.trip_id for m in memberships]
+    shared_trips = db.query(models.Trip).filter(models.Trip.id.in_(shared_trip_ids)).all() if shared_trip_ids else []
+
+    # Combine and deduplicate
+    all_trips = {trip.id: trip for trip in owned_trips + shared_trips}
+    return list(all_trips.values())
 
 @router.get("/{trip_id}", response_model=schemas.TripOut)
 def get_trip(trip_id: int, db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
-    trip = db.query(models.Trip).filter(models.Trip.id == trip_id, models.Trip.owner_sub == sub).first()
+    """Get trip details (owner or member)"""
+    trip = db.query(models.Trip).filter(models.Trip.id == trip_id).first()
     if not trip:
         raise HTTPException(404, "Trip not found")
+
+    # Check if user is owner or member
+    is_owner = trip.owner_sub == sub
+    is_member = db.query(models.TripMember).filter(
+        models.TripMember.trip_id == trip_id,
+        models.TripMember.user_id == sub,
+        models.TripMember.invite_status == "accepted"
+    ).first() is not None
+
+    if not (is_owner or is_member):
+        raise HTTPException(403, "Access denied")
+
+    return trip
+
+
+@router.put("/{trip_id}", response_model=schemas.TripOut)
+def update_trip(
+    trip_id: int,
+    payload: schemas.TripUpdate,
+    db: Session = Depends(get_db),
+    sub: str = Depends(require_user_sub)
+):
+    """Update trip details (owner or admin only)"""
+    trip = db.query(models.Trip).filter(models.Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+
+    # Check if user is owner or admin
+    is_owner = trip.owner_sub == sub
+    membership = db.query(models.TripMember).filter(
+        models.TripMember.trip_id == trip_id,
+        models.TripMember.user_id == sub,
+        models.TripMember.invite_status == "accepted"
+    ).first()
+    is_admin = membership and membership.role == "admin"
+
+    if not (is_owner or is_admin):
+        raise HTTPException(403, "Only owner or admin can edit trip")
+
+    # Update fields
+    if payload.title is not None:
+        trip.title = payload.title
+    if payload.destination is not None:
+        trip.destination = payload.destination
+    if payload.start_date is not None:
+        trip.start_date = payload.start_date
+    if payload.end_date is not None:
+        trip.end_date = payload.end_date
+    if payload.total_budget is not None:
+        trip.total_budget = payload.total_budget
+    if payload.per_diem_budget is not None:
+        trip.per_diem_budget = payload.per_diem_budget
+
+    db.commit()
+    db.refresh(trip)
     return trip

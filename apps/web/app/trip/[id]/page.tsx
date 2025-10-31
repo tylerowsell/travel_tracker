@@ -15,11 +15,14 @@ import { CategoryBreakdown } from "@/components/charts/category-breakdown"
 import { DailySpendingTrend } from "@/components/charts/daily-spending-trend"
 import { ExpenseModal } from "@/components/expense-modal"
 import { ItineraryTimeline } from "@/components/itinerary-timeline"
+import { ItineraryModal } from "@/components/itinerary-modal"
+import { BudgetEditModal } from "@/components/budget-edit-modal"
+import { TripEditModal } from "@/components/trip-edit-modal"
 import { SettlementCalculator } from "@/components/settlement-calculator"
 import { MemberManagement } from "@/components/member-management"
 import { ActivityFeed } from "@/components/activity-feed"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Wallet, TrendingUp, Users, Calendar, Plus } from "lucide-react"
+import { Wallet, TrendingUp, Users, Calendar, Plus, Edit2 } from "lucide-react"
 import { motion } from "framer-motion"
 
 // Dynamically import TripMap to avoid SSR issues with Leaflet
@@ -43,6 +46,10 @@ export default function TripDetailPage() {
   const { id } = useParams()
   const queryClient = useQueryClient()
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
+  const [expenseToEdit, setExpenseToEdit] = useState<any>(null)
+  const [itineraryModal, setItineraryModal] = useState<{ open: boolean; item: any }>({ open: false, item: null })
+  const [isBudgetModalOpen, setIsBudgetModalOpen] = useState(false)
+  const [isTripEditModalOpen, setIsTripEditModalOpen] = useState(false)
 
   const { data: trip } = useQuery({
     queryKey: ["trip", id],
@@ -85,8 +92,33 @@ export default function TripDetailPage() {
     },
   })
 
+  const { data: categoryBudgets = [] } = useQuery({
+    queryKey: ["category-budgets", id],
+    queryFn: async () => {
+      const res = await api.get(`/category-budgets/${id}`)
+      return res.data
+    },
+  })
+
   const handleAddExpense = async (expenseData: any) => {
     await api.post(`/expenses/${id}`, expenseData)
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["expenses", id] })
+    queryClient.invalidateQueries({ queryKey: ["analytics", id] })
+    queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
+  }
+
+  const handleEditExpense = async (expenseData: any) => {
+    await api.put(`/expenses/${id}/${expenseToEdit.id}`, expenseData)
+    // Invalidate queries to refresh data
+    queryClient.invalidateQueries({ queryKey: ["expenses", id] })
+    queryClient.invalidateQueries({ queryKey: ["analytics", id] })
+    queryClient.invalidateQueries({ queryKey: ["daily-trends", id] })
+    setExpenseToEdit(null)
+  }
+
+  const handleDeleteExpense = async (expenseId: number) => {
+    await api.delete(`/expenses/${id}/${expenseId}`)
     // Invalidate queries to refresh data
     queryClient.invalidateQueries({ queryKey: ["expenses", id] })
     queryClient.invalidateQueries({ queryKey: ["analytics", id] })
@@ -115,8 +147,17 @@ export default function TripDetailPage() {
         animate={{ opacity: 1, y: 0 }}
         className="flex items-start justify-between gap-4"
       >
-        <div className="space-y-2">
-          <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
+        <div className="space-y-2 flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
+            <button
+              onClick={() => setIsTripEditModalOpen(true)}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+              title="Edit trip details"
+            >
+              <Edit2 className="w-5 h-5 text-muted-foreground hover:text-primary" />
+            </button>
+          </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Calendar className="w-4 h-4" />
@@ -132,7 +173,10 @@ export default function TripDetailPage() {
         </div>
 
         <button
-          onClick={() => setIsExpenseModalOpen(true)}
+          onClick={() => {
+            setExpenseToEdit(null)
+            setIsExpenseModalOpen(true)
+          }}
           className="flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
         >
           <Plus className="w-5 h-5" />
@@ -234,7 +278,10 @@ export default function TripDetailPage() {
                   <CardDescription>Latest {Math.min(5, expenses.length)} transactions</CardDescription>
                 </div>
                 <button
-                  onClick={() => setIsExpenseModalOpen(true)}
+                  onClick={() => {
+                    setExpenseToEdit(null)
+                    setIsExpenseModalOpen(true)
+                  }}
                   className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border border-primary text-primary hover:bg-primary/10 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
@@ -244,13 +291,25 @@ export default function TripDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.slice(0, 5).map((expense: any, index: number) => (
-                <ExpenseCard key={expense.id} expense={expense} index={index} />
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  index={index}
+                  onEdit={(exp) => {
+                    setExpenseToEdit(exp)
+                    setIsExpenseModalOpen(true)
+                  }}
+                  onDelete={handleDeleteExpense}
+                />
               ))}
               {expenses.length === 0 && (
                 <div className="text-center py-8 space-y-4">
                   <p className="text-muted-foreground">No expenses recorded yet</p>
                   <button
-                    onClick={() => setIsExpenseModalOpen(true)}
+                    onClick={() => {
+                      setExpenseToEdit(null)
+                      setIsExpenseModalOpen(true)
+                    }}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                   >
                     <Plus className="w-4 h-4" />
@@ -266,8 +325,19 @@ export default function TripDetailPage() {
         <TabsContent value="budget" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Category Breakdown</CardTitle>
-              <CardDescription>Planned vs actual spending by category</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Category Breakdown</CardTitle>
+                  <CardDescription>Planned vs actual spending by category</CardDescription>
+                </div>
+                <button
+                  onClick={() => setIsBudgetModalOpen(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Edit Budget
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="chart-container">
               {analytics?.categories?.length > 0 ? (
@@ -315,7 +385,10 @@ export default function TripDetailPage() {
                   <CardDescription>Complete expense history ({expenses.length} total)</CardDescription>
                 </div>
                 <button
-                  onClick={() => setIsExpenseModalOpen(true)}
+                  onClick={() => {
+                    setExpenseToEdit(null)
+                    setIsExpenseModalOpen(true)
+                  }}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                 >
                   <Plus className="w-5 h-5" />
@@ -325,7 +398,16 @@ export default function TripDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {expenses.map((expense: any, index: number) => (
-                <ExpenseCard key={expense.id} expense={expense} index={index} />
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  index={index}
+                  onEdit={(exp) => {
+                    setExpenseToEdit(exp)
+                    setIsExpenseModalOpen(true)
+                  }}
+                  onDelete={handleDeleteExpense}
+                />
               ))}
               {expenses.length === 0 && (
                 <div className="text-center py-16 space-y-4">
@@ -336,7 +418,10 @@ export default function TripDetailPage() {
                       Start tracking your trip expenses
                     </p>
                     <button
-                      onClick={() => setIsExpenseModalOpen(true)}
+                      onClick={() => {
+                        setExpenseToEdit(null)
+                        setIsExpenseModalOpen(true)
+                      }}
                       className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition-opacity"
                     >
                       <Plus className="w-5 h-5" />
@@ -353,11 +438,26 @@ export default function TripDetailPage() {
         <TabsContent value="itinerary">
           <Card>
             <CardHeader>
-              <CardTitle>Trip Itinerary</CardTitle>
-              <CardDescription>Your complete travel schedule</CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Trip Itinerary</CardTitle>
+                  <CardDescription>Your complete travel schedule</CardDescription>
+                </div>
+                <button
+                  onClick={() => setItineraryModal({ open: true, item: null })}
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Item
+                </button>
+              </div>
             </CardHeader>
             <CardContent>
-              <ItineraryTimeline items={itinerary} />
+              <ItineraryTimeline
+                items={itinerary}
+                onItemClick={(item) => setItineraryModal({ open: true, item })}
+                onAddClick={() => setItineraryModal({ open: true, item: null })}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -402,8 +502,33 @@ export default function TripDetailPage() {
       {/* Expense Modal */}
       <ExpenseModal
         isOpen={isExpenseModalOpen}
-        onClose={() => setIsExpenseModalOpen(false)}
-        onSubmit={handleAddExpense}
+        onClose={() => {
+          setIsExpenseModalOpen(false)
+          setExpenseToEdit(null)
+        }}
+        onSubmit={expenseToEdit ? handleEditExpense : handleAddExpense}
+        trip={trip}
+        expense={expenseToEdit}
+      />
+
+      <ItineraryModal
+        isOpen={itineraryModal.open}
+        onClose={() => setItineraryModal({ open: false, item: null })}
+        tripId={Number(id)}
+        item={itineraryModal.item}
+      />
+
+      <BudgetEditModal
+        isOpen={isBudgetModalOpen}
+        onClose={() => setIsBudgetModalOpen(false)}
+        tripId={Number(id)}
+        trip={trip}
+        currentBudgets={categoryBudgets}
+      />
+
+      <TripEditModal
+        isOpen={isTripEditModalOpen}
+        onClose={() => setIsTripEditModalOpen(false)}
         trip={trip}
       />
     </div>

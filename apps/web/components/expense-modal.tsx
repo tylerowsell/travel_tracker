@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, DollarSign, Calendar, MapPin, FileText, Plus, Minus, Camera, Upload } from 'lucide-react';
 
@@ -9,9 +9,10 @@ type ExpenseModalProps = {
   onClose: () => void;
   onSubmit: (data: any) => Promise<void>;
   trip: any;
+  expense?: any; // If provided, we're editing
 };
 
-export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalProps) {
+export function ExpenseModal({ isOpen, onClose, onSubmit, trip, expense }: ExpenseModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     dt: new Date().toISOString().split('T')[0],
@@ -36,26 +37,37 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
   const [photos, setPhotos] = useState<string[]>([]);
   const [photoInput, setPhotoInput] = useState('');
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.amount || !formData.payer_id) return;
-
-    setIsSubmitting(true);
-    try {
-      const selectedSplits = splits.filter((s: any) => s.selected);
-      await onSubmit({
-        ...formData,
-        amount: parseFloat(formData.amount),
-        fx_rate_to_home: 1.0,
-        receipt_urls: photos.length > 0 ? photos : null,
-        splits: selectedSplits.map((s: any) => ({
-          participant_id: s.participant_id,
-          share_type: s.share_type,
-          share_value: s.share_value,
-        })),
+  // Initialize form data when editing
+  useEffect(() => {
+    if (isOpen && expense) {
+      setFormData({
+        dt: expense.dt,
+        amount: expense.amount.toString(),
+        currency: expense.currency,
+        category: expense.category || 'food',
+        note: expense.note || '',
+        merchant_name: expense.merchant_name || '',
+        location_text: expense.location_text || '',
+        payer_id: expense.payer_id,
       });
 
-      // Reset form
+      if (expense.splits && expense.splits.length > 0) {
+        setSplits(
+          trip?.participants?.map((p: any) => {
+            const existingSplit = expense.splits.find((s: any) => s.participant_id === p.id);
+            return {
+              participant_id: p.id,
+              selected: !!existingSplit,
+              share_type: existingSplit?.share_type || 'equal',
+              share_value: existingSplit?.share_value || null,
+            };
+          }) || []
+        );
+      }
+
+      setPhotos(expense.receipt_urls || []);
+    } else if (isOpen && !expense) {
+      // Reset for new expense
       setFormData({
         dt: new Date().toISOString().split('T')[0],
         amount: '',
@@ -75,11 +87,55 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
         })) || []
       );
       setPhotos([]);
-      setPhotoInput('');
+    }
+  }, [isOpen, expense, trip]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.amount || !formData.payer_id) return;
+
+    setIsSubmitting(true);
+    try {
+      const selectedSplits = splits.filter((s: any) => s.selected);
+      await onSubmit({
+        ...formData,
+        amount: parseFloat(formData.amount),
+        fx_rate_to_home: 1.0,
+        receipt_urls: photos.length > 0 ? photos : null,
+        splits: selectedSplits.map((s: any) => ({
+          participant_id: s.participant_id,
+          share_type: s.share_type,
+          share_value: s.share_value,
+        })),
+      });
+
+      // Reset form only if not editing (will be closed anyway)
+      if (!expense) {
+        setFormData({
+          dt: new Date().toISOString().split('T')[0],
+          amount: '',
+          currency: trip?.home_currency || 'USD',
+          category: 'food',
+          note: '',
+          merchant_name: '',
+          location_text: '',
+          payer_id: trip?.participants?.[0]?.id || '',
+        });
+        setSplits(
+          trip?.participants?.map((p: any) => ({
+            participant_id: p.id,
+            selected: true,
+            share_type: 'equal',
+            share_value: null,
+          })) || []
+        );
+        setPhotos([]);
+        setPhotoInput('');
+      }
       onClose();
     } catch (error) {
-      console.error('Failed to create expense:', error);
-      alert('Failed to create expense. Please try again.');
+      console.error(`Failed to ${expense ? 'update' : 'create'} expense:`, error);
+      alert(`Failed to ${expense ? 'update' : 'create'} expense. Please try again.`);
     } finally {
       setIsSubmitting(false);
     }
@@ -117,9 +173,9 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
           {/* Header */}
           <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b border-border bg-card/95 backdrop-blur">
             <div>
-              <h2 className="text-2xl font-bold">Add Expense</h2>
+              <h2 className="text-2xl font-bold">{expense ? 'Edit' : 'Add'} Expense</h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Record a new expense for {trip?.title}
+                {expense ? `Update expense details for ${trip?.title}` : `Record a new expense for ${trip?.title}`}
               </p>
             </div>
             <button
@@ -379,10 +435,10 @@ export function ExpenseModal({ isOpen, onClose, onSubmit, trip }: ExpenseModalPr
                 {isSubmitting ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Adding...
+                    {expense ? 'Updating...' : 'Adding...'}
                   </span>
                 ) : (
-                  'Add Expense'
+                  expense ? 'Update Expense' : 'Add Expense'
                 )}
               </button>
             </div>
