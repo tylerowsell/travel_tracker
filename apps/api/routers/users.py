@@ -9,6 +9,40 @@ from auth import require_user_sub
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+@router.post("/sync", response_model=schemas.UserProfileOut)
+def sync_user_profile(
+    payload: schemas.UserProfileCreate,
+    db: Session = Depends(get_db),
+    sub: str = Depends(require_user_sub)
+):
+    """Create or get user profile (for auto-sync on login)"""
+    user = db.query(models.UserProfile).filter(models.UserProfile.id == sub).first()
+
+    if user:
+        # Update existing profile with latest data from auth provider
+        user.email = payload.email
+        user.display_name = payload.display_name
+        if payload.avatar_url:
+            user.avatar_url = payload.avatar_url
+        user.updated_at = datetime.utcnow()
+    else:
+        # Create new profile
+        user = models.UserProfile(
+            id=sub,
+            email=payload.email,
+            display_name=payload.display_name,
+            avatar_url=payload.avatar_url,
+            bio=payload.bio,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(user)
+
+    db.commit()
+    db.refresh(user)
+    return user
+
+
 @router.get("/me", response_model=schemas.UserProfileOut)
 def get_current_user(db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
     """Get current user's profile"""
