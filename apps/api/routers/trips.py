@@ -133,15 +133,6 @@ def fix_trip_ownership(db: Session = Depends(get_db), sub: str = Depends(require
         trip.owner_sub = sub
         trips_updated += 1
 
-        # Update participants if they have user_sub = dev-user-sub
-        participants = db.query(models.Participant).filter(
-            models.Participant.trip_id == trip.id,
-            models.Participant.user_sub == "dev-user-sub"
-        ).all()
-
-        for participant in participants:
-            participant.user_sub = sub
-
         # Update trip members if they exist
         members = db.query(models.TripMember).filter(
             models.TripMember.trip_id == trip.id,
