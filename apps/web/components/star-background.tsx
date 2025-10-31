@@ -22,16 +22,16 @@ export function StarBackground() {
 
     // Create stars
     const stars: { x: number; y: number; radius: number; vx: number; vy: number; opacity: number }[] = []
-    const starCount = 200
+    const starCount = 250
 
     for (let i = 0; i < starCount; i++) {
       stars.push({
         x: Math.random() * canvas.width,
         y: Math.random() * canvas.height,
-        radius: Math.random() * 1.5,
+        radius: Math.random() * 1.8 + 0.3, // Slightly larger stars
         vx: (Math.random() - 0.5) * 0.2,
         vy: (Math.random() - 0.5) * 0.2,
-        opacity: Math.random() * 0.3 + 0.1, // Faint: 0.1 to 0.4
+        opacity: Math.random() * 0.5 + 0.3, // Brighter: 0.3 to 0.8
       })
     }
 
@@ -51,8 +51,8 @@ export function StarBackground() {
         if (star.y < 0) star.y = canvas.height
         if (star.y > canvas.height) star.y = 0
 
-        // Twinkling effect
-        star.opacity = Math.sin(Date.now() * 0.001 + star.x) * 0.15 + 0.2
+        // Twinkling effect - brighter range
+        star.opacity = Math.sin(Date.now() * 0.001 + star.x) * 0.25 + 0.45
 
         // Draw star
         ctx.beginPath()
@@ -76,7 +76,7 @@ export function StarBackground() {
     <canvas
       ref={canvasRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
-      style={{ opacity: 0.4 }}
+      style={{ opacity: 0.65 }}
     />
   )
 }
