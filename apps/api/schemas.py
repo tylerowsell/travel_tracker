@@ -177,3 +177,110 @@ class DailyTrends(BaseModel):
     average_daily: float
     per_diem_budget: Optional[float]
     projected_total: float
+
+
+# ==================== Multi-User Collaboration Schemas ====================
+
+class UserProfileOut(BaseModel):
+    """User profile response"""
+    id: str
+    email: str
+    display_name: str
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    class Config: from_attributes = True
+
+
+class UserProfileUpdate(BaseModel):
+    """User profile update"""
+    display_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+    bio: Optional[str] = None
+
+
+class TripMemberOut(BaseModel):
+    """Trip member response"""
+    id: int
+    trip_id: int
+    user_id: str
+    role: str
+    invite_status: str
+    joined_at: datetime
+    user: Optional[UserProfileOut] = None
+    class Config: from_attributes = True
+
+
+class TripMemberUpdate(BaseModel):
+    """Update trip member role or status"""
+    role: Optional[str] = None
+    invite_status: Optional[str] = None
+
+
+class TripInviteCreate(BaseModel):
+    """Create a trip invite link"""
+    expires_at: Optional[datetime] = None
+    max_uses: Optional[int] = None
+
+
+class TripInviteOut(BaseModel):
+    """Trip invite response"""
+    id: str
+    trip_id: int
+    created_by: str
+    expires_at: Optional[datetime] = None
+    max_uses: Optional[int] = None
+    used_count: int
+    created_at: datetime
+    class Config: from_attributes = True
+
+
+class ActivityLogOut(BaseModel):
+    """Activity log entry"""
+    id: int
+    trip_id: int
+    user_id: str
+    action_type: str
+    metadata: Optional[dict] = None
+    created_at: datetime
+    user: Optional[UserProfileOut] = None
+    class Config: from_attributes = True
+
+
+class CommentCreate(BaseModel):
+    """Create a comment on an expense"""
+    content: str
+
+
+class CommentUpdate(BaseModel):
+    """Update a comment"""
+    content: str
+
+
+class CommentOut(BaseModel):
+    """Comment response"""
+    id: int
+    expense_id: int
+    user_id: str
+    content: str
+    created_at: datetime
+    updated_at: datetime
+    user: Optional[UserProfileOut] = None
+    class Config: from_attributes = True
+
+
+class ReactionCreate(BaseModel):
+    """Create a reaction on an expense"""
+    emoji: str = Field(max_length=10)
+
+
+class ReactionOut(BaseModel):
+    """Reaction response"""
+    id: int
+    expense_id: int
+    user_id: str
+    emoji: str
+    created_at: datetime
+    user: Optional[UserProfileOut] = None
+    class Config: from_attributes = True
