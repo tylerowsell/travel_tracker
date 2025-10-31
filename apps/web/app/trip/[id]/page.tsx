@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useParams } from "next/navigation"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import axios from "axios"
+import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { StatCard } from "@/components/stat-card"
@@ -18,6 +19,18 @@ import { SettlementCalculator } from "@/components/settlement-calculator"
 import { formatCurrency, formatDate } from "@/lib/utils"
 import { Wallet, TrendingUp, Users, Calendar, Plus } from "lucide-react"
 import { motion } from "framer-motion"
+
+// Dynamically import TripMap to avoid SSR issues with Leaflet
+const TripMap = dynamic(() => import('@/components/trip-map').then(mod => ({ default: mod.TripMap })), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-[600px]">
+      <div className="shimmer card p-8">
+        <p className="text-muted-foreground">Loading map...</p>
+      </div>
+    </div>
+  ),
+})
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -157,11 +170,12 @@ export default function TripDetailPage() {
 
       {/* Main Content Tabs */}
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="budget">Budget</TabsTrigger>
           <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="itinerary">Itinerary</TabsTrigger>
+          <TabsTrigger value="map">Map</TabsTrigger>
           <TabsTrigger value="split">Split</TabsTrigger>
         </TabsList>
 
@@ -342,6 +356,11 @@ export default function TripDetailPage() {
               <ItineraryTimeline items={itinerary} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Map Tab */}
+        <TabsContent value="map">
+          <TripMap expenses={expenses} itinerary={itinerary} trip={trip} />
         </TabsContent>
 
         {/* Split Tab */}
