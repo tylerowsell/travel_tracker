@@ -12,7 +12,13 @@ from routers import (
     analytics,
     accommodations,
     category_budgets,
-    settlements
+    settlements,
+    users,
+    members,
+    invites,
+    activity,
+    comments,
+    reactions
 )
 
 ENV = os.environ.get("ENV", "local")
@@ -41,6 +47,14 @@ app.include_router(analytics.router)
 app.include_router(accommodations.router)
 app.include_router(category_budgets.router)
 app.include_router(settlements.router)
+
+# Multi-user collaboration routers
+app.include_router(users.router)
+app.include_router(members.router)
+app.include_router(invites.router)
+app.include_router(activity.router)
+app.include_router(comments.router)
+app.include_router(reactions.router)
 
 @app.get("/")
 def root():

@@ -41,6 +41,10 @@ class Trip(Base):
     category_budgets = relationship("CategoryBudget", back_populates="trip", cascade="all, delete-orphan")
     accommodations = relationship("Accommodation", back_populates="trip", cascade="all, delete-orphan")
     settlements = relationship("Settlement", back_populates="trip", cascade="all, delete-orphan")
+    # Multi-user relationships
+    members = relationship("TripMember", back_populates="trip", cascade="all, delete-orphan")
+    invites = relationship("TripInvite", back_populates="trip", cascade="all, delete-orphan")
+    activities = relationship("ActivityLog", back_populates="trip", cascade="all, delete-orphan")
 
 class Participant(Base):
     __tablename__ = "participants"
@@ -89,6 +93,9 @@ class Expense(Base):
     trip = relationship("Trip", back_populates="expenses")
     payer = relationship("Participant", back_populates="pays")
     splits = relationship("ExpenseSplit", back_populates="expense", cascade="all, delete-orphan")
+    # Multi-user relationships
+    comments = relationship("Comment", back_populates="expense", cascade="all, delete-orphan")
+    reactions = relationship("Reaction", back_populates="expense", cascade="all, delete-orphan")
 
 class ExpenseSplit(Base):
     __tablename__ = "expense_splits"
@@ -156,3 +163,103 @@ class Settlement(Base):
     trip = relationship("Trip", back_populates="settlements")
     from_participant = relationship("Participant", foreign_keys=[from_participant_id])
     to_participant = relationship("Participant", foreign_keys=[to_participant_id])
+
+
+# ==================== Multi-User Collaboration Models ====================
+
+class UserProfile(Base):
+    """User profile linked to Supabase Auth"""
+    __tablename__ = "user_profiles"
+    id = Column(String, primary_key=True)  # Supabase user ID
+    email = Column(String, nullable=False, unique=True, index=True)
+    display_name = Column(String, nullable=False)
+    avatar_url = Column(String, nullable=True)
+    bio = Column(Text, nullable=True)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    trip_memberships = relationship("TripMember", back_populates="user")
+    invites_created = relationship("TripInvite", back_populates="creator")
+    activities = relationship("ActivityLog", back_populates="user")
+    comments = relationship("Comment", back_populates="user")
+    reactions = relationship("Reaction", back_populates="user")
+
+
+class TripMember(Base):
+    """Links users to trips with roles and permissions"""
+    __tablename__ = "trip_members"
+    id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("user_profiles.id", ondelete="CASCADE"), nullable=False, index=True)
+    role = Column(String, nullable=False, default="member")  # owner, admin, member, viewer
+    invite_status = Column(String, nullable=False, default="accepted")  # pending, accepted, declined
+    joined_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    trip = relationship("Trip", back_populates="members")
+    user = relationship("UserProfile", back_populates="trip_memberships")
+
+    __table_args__ = (UniqueConstraint('trip_id', 'user_id', name='uq_trip_user'),)
+
+
+class TripInvite(Base):
+    """Shareable invite links for trips"""
+    __tablename__ = "trip_invites"
+    id = Column(String, primary_key=True)  # UUID
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    created_by = Column(String, ForeignKey("user_profiles.id"), nullable=False)
+    expires_at = Column(DateTime, nullable=True)
+    max_uses = Column(Integer, nullable=True)  # null = unlimited
+    used_count = Column(Integer, nullable=False, default=0)
+    created_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    trip = relationship("Trip", back_populates="invites")
+    creator = relationship("UserProfile", back_populates="invites_created")
+
+
+class ActivityLog(Base):
+    """Activity feed for trips"""
+    __tablename__ = "activity_log"
+    id = Column(Integer, primary_key=True, index=True)
+    trip_id = Column(Integer, ForeignKey("trips.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("user_profiles.id"), nullable=False)
+    action_type = Column(String, nullable=False)  # expense_added, member_joined, etc.
+    metadata = Column(JSON, nullable=True)
+    created_at = Column(DateTime, nullable=False, index=True)
+
+    # Relationships
+    trip = relationship("Trip", back_populates="activities")
+    user = relationship("UserProfile", back_populates="activities")
+
+
+class Comment(Base):
+    """Comments on expenses"""
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    expense_id = Column(Integer, ForeignKey("expenses.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("user_profiles.id"), nullable=False)
+    content = Column(Text, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    updated_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    expense = relationship("Expense", back_populates="comments")
+    user = relationship("UserProfile", back_populates="comments")
+
+
+class Reaction(Base):
+    """Emoji reactions on expenses"""
+    __tablename__ = "reactions"
+    id = Column(Integer, primary_key=True, index=True)
+    expense_id = Column(Integer, ForeignKey("expenses.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id = Column(String, ForeignKey("user_profiles.id"), nullable=False)
+    emoji = Column(String(10), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+    # Relationships
+    expense = relationship("Expense", back_populates="reactions")
+    user = relationship("UserProfile", back_populates="reactions")
+
+    __table_args__ = (UniqueConstraint('expense_id', 'user_id', 'emoji', name='uq_user_emoji_expense'),)
