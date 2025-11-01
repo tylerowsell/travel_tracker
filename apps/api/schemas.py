@@ -24,6 +24,7 @@ class TripCreate(BaseModel):
 
 class TripOut(BaseModel):
     id: int
+    owner_sub: str
     title: str
     home_currency: str
     start_date: date
