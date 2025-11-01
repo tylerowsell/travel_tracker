@@ -111,6 +111,23 @@ def update_trip(
     return trip
 
 
+@router.delete("/{trip_id}", response_model=dict)
+def delete_trip(trip_id: int, db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
+    """Delete a trip (owner only)"""
+    trip = db.query(models.Trip).filter(models.Trip.id == trip_id).first()
+    if not trip:
+        raise HTTPException(404, "Trip not found")
+
+    # Only owner can delete the trip
+    if trip.owner_sub != sub:
+        raise HTTPException(403, "Only the trip owner can delete this trip")
+
+    db.delete(trip)
+    db.commit()
+
+    return {"message": "Trip deleted successfully", "trip_id": trip_id}
+
+
 @router.post("/fix-ownership", response_model=dict)
 def fix_trip_ownership(db: Session = Depends(get_db), sub: str = Depends(require_user_sub)):
     """
