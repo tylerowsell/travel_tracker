@@ -1,8 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useParams } from "next/navigation"
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useParams, useRouter } from "next/navigation"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import axios from "axios"
 import dynamic from "next/dynamic"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -22,7 +22,7 @@ import { SettlementCalculator } from "@/components/settlement-calculator"
 import { MemberManagement } from "@/components/member-management"
 import { ActivityFeed } from "@/components/activity-feed"
 import { formatCurrency, formatDate } from "@/lib/utils"
-import { Wallet, TrendingUp, Users, Calendar, Plus, Edit2 } from "lucide-react"
+import { Wallet, TrendingUp, Users, Calendar, Plus, Edit2, Trash2 } from "lucide-react"
 import { motion } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
 
@@ -41,6 +41,7 @@ const TripMap = dynamic(() => import('@/components/trip-map').then(mod => ({ def
 export default function TripDetailPage() {
   const { id } = useParams()
   const { user } = useAuth()
+  const router = useRouter()
   const queryClient = useQueryClient()
   const [isExpenseModalOpen, setIsExpenseModalOpen] = useState(false)
   const [expenseToEdit, setExpenseToEdit] = useState<any>(null)
@@ -114,6 +115,27 @@ export default function TripDetailPage() {
     enabled: !!user,
   })
 
+  // Delete trip mutation
+  const deleteTripMutation = useMutation({
+    mutationFn: async () => {
+      await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/trips/${id}`, {
+        headers: { "x-user-sub": user?.id || "" },
+      })
+    },
+    onSuccess: () => {
+      router.push("/")
+    },
+    onError: (error: any) => {
+      alert(error.response?.data?.detail || "Failed to delete trip")
+    },
+  })
+
+  const handleDeleteTrip = () => {
+    if (window.confirm("Are you sure you want to delete this trip? This action cannot be undone.")) {
+      deleteTripMutation.mutate()
+    }
+  }
+
   const handleAddExpense = async (expenseData: any) => {
     await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/expenses/${id}`, expenseData, {
       headers: { "x-user-sub": user?.id || "" },
@@ -170,13 +192,25 @@ export default function TripDetailPage() {
         <div className="space-y-2 flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-4xl font-bold gradient-text">{trip.title}</h1>
-            <button
-              onClick={() => setIsTripEditModalOpen(true)}
-              className="p-2 hover:bg-accent rounded-lg transition-colors"
-              title="Edit trip details"
-            >
-              <Edit2 className="w-5 h-5 text-muted-foreground hover:text-primary" />
-            </button>
+            {trip.owner_sub === user?.id && (
+              <>
+                <button
+                  onClick={() => setIsTripEditModalOpen(true)}
+                  className="p-2 hover:bg-accent rounded-lg transition-colors"
+                  title="Edit trip details"
+                >
+                  <Edit2 className="w-5 h-5 text-muted-foreground hover:text-primary" />
+                </button>
+                <button
+                  onClick={handleDeleteTrip}
+                  className="p-2 hover:bg-red-500/10 rounded-lg transition-colors"
+                  title="Delete trip"
+                  disabled={deleteTripMutation.isPending}
+                >
+                  <Trash2 className="w-5 h-5 text-muted-foreground hover:text-red-500" />
+                </button>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
