@@ -123,17 +123,6 @@ export function MemberManagement({ tripId, ownerSub }: { tripId: number; ownerSu
   const currentMember = members.find(m => m.user_id === user?.id);
   const isAdmin = isOwner || currentMember?.role === 'admin';
 
-  // Debug logging - remove after debugging
-  console.log('Member Management Debug:', {
-    userId: user?.id,
-    ownerSub,
-    isOwner,
-    currentMember,
-    currentMemberRole: currentMember?.role,
-    isAdmin,
-    allMembers: members.map(m => ({ user_id: m.user_id, role: m.role }))
-  });
-
   const copyInviteLink = (inviteId: string) => {
     const inviteUrl = `${window.location.origin}/invite/${inviteId}`;
     navigator.clipboard.writeText(inviteUrl);
