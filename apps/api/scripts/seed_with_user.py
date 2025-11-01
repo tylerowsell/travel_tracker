@@ -201,7 +201,7 @@ def create_japan_trip(db: Session, user_id: str):
             trip_id=trip.id, payer_id=payer_id, dt=exp_date, amount=amount,
             currency="USD", category=category, note=note, merchant_name=merchant,
             fx_rate_to_home=1.0, lat=lat, lng=lng,
-            receipt_url=f"https://example.com/receipts/{merchant.replace(' ', '-').lower()}.jpg" if merchant else None
+            receipt_urls=[f"https://example.com/receipts/{merchant.replace(' ', '-').lower()}.jpg"] if merchant else None
         )
         db.add(exp)
         db.flush()
@@ -401,7 +401,7 @@ def create_iceland_trip(db: Session, user_id: str):
             trip_id=trip.id, payer_id=payer_id, dt=exp_date, amount=amount,
             currency="USD", category=category, note=note, merchant_name=merchant,
             fx_rate_to_home=1.0, lat=lat, lng=lng,
-            receipt_url=f"https://example.com/receipts/iceland-{merchant.replace(' ', '-').lower()}.jpg" if merchant else None
+            receipt_urls=[f"https://example.com/receipts/iceland-{merchant.replace(' ', '-').lower()}.jpg"] if merchant else None
         )
         db.add(exp)
         db.flush()
